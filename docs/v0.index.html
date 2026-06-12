@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>FactsPack (.pack) — a token-efficient, agent-first data format</title>
+<meta name="description" content="FactsPack (.pack) is a line-oriented text format that streams structured tabular data to AI agents at ~1/5 the token cost of JSON. Invented by Aditya Mishra.">
+<meta name="author" content="Aditya Mishra">
+<style>
+  :root{
+    --bg:#15161e; --bg2:#1a1b26; --panel:#1f2335; --panel2:#24283b;
+    --line:#2f344d; --fg:#c0caf5; --fg-dim:#787fa3; --fg-faint:#565f89;
+    --accent:#e0af68; --accent2:#ff9e64;
+    --c-header:#7aa2f7; --c-meta:#636da6; --c-dict:#9ece6a; --c-schema:#bb9af7;
+    --c-row:#c0caf5; --c-add:#73daca; --c-del:#f7768e;
+    --mono:'Cascadia Code','JetBrains Mono','Fira Code',Consolas,'SF Mono',monospace;
+    --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  [data-theme="light"] {
+    --bg:#f8f9fa; --bg2:#ffffff; --panel:#e9ecef; --panel2:#dee2e6;
+    --line:#ced4da; --fg:#212529; --fg-dim:#495057; --fg-faint:#6c757d;
+    --accent:#b45309; --accent2:#ea580c;
+    --c-header:#1d4ed8; --c-meta:#4b5563; --c-dict:#166534; --c-schema:#6d28d9;
+    --c-row:#212529; --c-add:#0f766e; --c-del:#be123c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;transition:background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.65;font-size:16.5px}
+  a{color:var(--c-header);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:980px;margin:0 auto;padding:0 28px}
+  code,pre{font-family:var(--mono)}
+  code{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:.08em .35em;font-size:.86em}
+  pre{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:18px 20px;overflow-x:auto;font-size:.84rem;line-height:1.7}
+  pre code{background:none;border:none;padding:0;font-size:inherit}
+
+  /* ---------- theme-toggle ---------- */
+  #theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--fg);
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-family: var(--sans);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    outline: none;
+  }
+  #theme-toggle:hover {
+    background: var(--panel2);
+  }
+
+  /* ---------- hero ---------- */
+  header{padding:84px 0 56px;border-bottom:1px solid var(--line);
+    background:radial-gradient(1100px 480px at 70% -10%,rgba(122,162,247,.10),transparent 60%),
+               radial-gradient(900px 420px at 10% 0%,rgba(224,175,104,.08),transparent 55%)}
+  .ext{font-family:var(--mono);font-size:.95rem;color:var(--accent);letter-spacing:.06em;
+    border:1px solid rgba(224,175,104,.4);border-radius:999px;padding:.3em 1em;display:inline-block;margin-bottom:26px;
+    background:rgba(224,175,104,.07)}
+  h1{font-size:clamp(2.1rem,5.2vw,3.4rem);line-height:1.12;font-weight:800;letter-spacing:-.02em;color:var(--fg)}
+  h1 .dim{color:var(--fg-dim);font-weight:600}
+  .tagline{margin-top:20px;font-size:1.22rem;color:var(--fg-dim);max-width:46em}
+  .tagline b{color:var(--fg)}
+  .byline{margin-top:26px;font-size:.95rem;color:var(--fg-faint)}
+  .byline b{color:var(--accent)}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-top:36px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 22px;min-width:150px}
+  .stat .n{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent)}
+  .stat .l{font-size:.82rem;color:var(--fg-faint);margin-top:2px}
+
+  /* ---------- sections ---------- */
+  section{padding:62px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:1.7rem;font-weight:750;letter-spacing:-.01em;color:var(--fg);margin-bottom:8px}
+  h2 .no{color:var(--fg-faint);font-family:var(--mono);font-weight:500;font-size:1.1rem;margin-right:.6em}
+  h3{font-size:1.12rem;color:var(--fg);margin:30px 0 10px}
+  .lead{color:var(--fg-dim);max-width:50em;margin-bottom:22px}
+  p{margin:12px 0;max-width:54em}
+  ul{margin:10px 0 10px 1.3em}
+  li{margin:6px 0;max-width:50em}
+
+  /* ---------- token bars ---------- */
+  .bars{margin:26px 0;display:grid;gap:18px}
+  .bar-row .cap{display:flex;justify-content:space-between;font-size:.85rem;color:var(--fg-dim);margin-bottom:6px}
+  .bar-row .cap b{color:var(--fg)}
+  .track{display:grid;gap:5px}
+  .bar{height:14px;border-radius:4px;position:relative}
+  .bar span{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:.74rem;color:var(--fg-faint);white-space:nowrap}
+  .bar.json{background:linear-gradient(90deg,#f7768e88,#f7768e44)}
+  .bar.tsv{background:linear-gradient(90deg,#7aa2f788,#7aa2f744)}
+  .bar.pack{background:linear-gradient(90deg,var(--accent),#e0af6855)}
+  .bar.pack span{color:var(--accent)}
+
+  /* ---------- pack listing ---------- */
+  .listing{background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow-x:auto;margin:18px 0}
+  .listing .title{font-family:var(--mono);font-size:.74rem;color:var(--fg-faint);
+    padding:9px 16px;border-bottom:1px solid var(--line);letter-spacing:.05em}
+  .listing pre{border:none;border-radius:0;margin:0;background:none}
+  .ln{display:block;padding:0 4px;border-radius:4px}
+  .ln:hover{background:var(--panel2)}
+  .p-h{color:var(--c-header)} .p-m{color:var(--c-meta);font-style:italic}
+  .p-d{color:var(--c-dict)} .p-s{color:var(--c-schema);font-weight:600}
+  .p-r{color:var(--c-row)} .p-a{color:var(--c-add)} .p-x{color:var(--c-del)}
+  .sig{display:inline-block;width:1.1em;font-weight:700}
+
+  /* ---------- line-type table ---------- */
+  table{border-collapse:collapse;width:100%;margin:20px 0;font-size:.92rem}
+  th{text-align:left;color:var(--fg-faint);font-weight:600;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase}
+  th,td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child{font-family:var(--mono);font-weight:700;white-space:nowrap}
+  tr:hover td{background:rgba(122,162,247,.04)}
+  .cmp td{font-size:.9rem}
+  .cmp td:first-child{font-family:var(--sans);font-weight:650;color:var(--fg);white-space:normal}
+
+  /* ---------- side-by-side ---------- */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+  @media(max-width:760px){.duo{grid-template-columns:1fr}.bar span{display:none}}
+
+  /* ---------- cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;margin:24px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+  .card h4{color:var(--accent);font-size:1rem;margin-bottom:8px;font-family:var(--mono);font-weight:600}
+  .card p{font-size:.92rem;color:var(--fg-dim);margin:0}
+  .card p b{color:var(--fg)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(224,175,104,.06);
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0;font-size:.94rem;color:var(--fg-dim)}
+  .note b{color:var(--accent)}
+
+  details{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:10px 0;padding:0}
+  summary{cursor:pointer;padding:14px 18px;font-weight:650;color:var(--fg);list-style:none}
+  summary::before{content:'+';font-family:var(--mono);color:var(--accent);margin-right:.7em}
+  details[open] summary::before{content:'−'}
+  details .body{padding:0 18px 16px;color:var(--fg-dim);font-size:.95rem}
+
+  footer{padding:56px 0 72px;color:var(--fg-dim);font-size:.95rem}
+  footer .cite{background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+    padding:16px 20px;font-family:var(--mono);font-size:.82rem;margin:18px 0;color:var(--fg)}
+  .foot-meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:24px;font-size:.85rem;color:var(--fg-faint)}
+</style>
+</head>
+<body>
+
+<button id="theme-toggle">☀️ Light Mode</button>
+
+<header>
+  <div class="wrap" style="position:relative;">
+    <span class="ext">.pack — FactsPack standard v0.2</span>
+    <h1>Structured data your AI agent<br>can afford to read.<span class="dim"></span></h1>
+    <p class="tagline"><b>FactsPack</b> is a line-oriented text format that streams tabular data
+      to LLM agents at roughly <b>one-fifth the token cost of JSON</b> — while staying
+      human-readable, append-friendly, self-describing, and tamper-evident.</p>
+    <p class="byline">Invented &amp; authored by <b>Aditya Mishra</b> · Open source under AGPL-3.0</p>
+    <div class="stats">
+      <div class="stat"><div class="n">−81%</div><div class="l">tokens vs JSON · 5k symbols</div></div>
+      <div class="stat"><div class="n">−91%</div><div class="l">tokens vs JSON · 10k imports</div></div>
+      <div class="stat"><div class="n">7</div><div class="l">line types — the whole grammar</div></div>
+      <div class="stat"><div class="n">8 lines</div><div class="l">of preamble teach any LLM</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="why">
+  <div class="wrap">
+    <h2><span class="no">01</span>Why it exists</h2>
+    <p class="lead">When an agent calls a tool that returns 5,000 records, JSON repeats every key
+      (<code>"id"</code>, <code>"kind"</code>, <code>"name"</code>, <code>"file"</code>…) and every quoted file path on
+      every single record. Context windows are paid by the token; that repetition is pure cost.</p>
+
+    <div class="bars">
+      <div class="bar-row">
+        <div class="cap"><span><b>Symbols</b> — 5,000 rows</span><span>lower is better</span></div>
+        <div class="track">
+          <div class="bar json" style="width:75%"><span>JSON · 150k tokens</span></div>
+          <div class="bar tsv"  style="width:21%"><span>TSV · 42k</span></div>
+          <div class="bar pack" style="width:14%"><span>PACK · 28k&nbsp;&nbsp;(−81%)</span></div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="cap"><span><b>Import edges</b> — 10,000 rows</span></div>
+        <div class="track">
+          <div class="bar json" style="width:80%"><span>JSON · 200k tokens</span></div>
+          <div class="bar tsv"  style="width:22%"><span>TSV · 55k</span></div>
+          <div class="bar pack" style="width:7.2%"><span>PACK · 18k&nbsp;&nbsp;(−91%)</span></div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="cap"><span><b>Findings</b> — 200 rows</span></div>
+        <div class="track">
+          <div class="bar json" style="width:56%"><span>JSON · 28k tokens</span></div>
+          <div class="bar tsv"  style="width:24%"><span>TSV · 12k</span></div>
+          <div class="bar pack" style="width:16%"><span>PACK · 8k&nbsp;&nbsp;(−71%)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p>Three moves get it there:</p>
+    <div class="cards">
+      <div class="card"><h4>schema once</h4><p>Column names appear a single time, like CSV — rows are <b>positional</b>.</p></div>
+      <div class="card"><h4>strings interned</h4><p>Heavy repeated values (file paths, rule ids) appear <b>exactly once</b> in a dictionary; rows reference them as <code>F1</code>, <code>F2</code>…</p></div>
+      <div class="card"><h4>1-char prefixes</h4><p>No braces, quotes, or per-record delimiters. The first byte of each line <b>is</b> the syntax.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="anatomy">
+  <div class="wrap">
+    <h2><span class="no">02</span>Anatomy — seven line types</h2>
+    <p class="lead">A <code>.pack</code> is a stream of UTF-8 lines. The first character routes each one.
+      Fields are separated by a real tab; <code>\t</code> <code>\n</code> <code>\\</code> are the only escapes — there is no quoting layer.</p>
+
+    <table>
+      <tr><th>Prefix</th><th>Role</th><th>Example</th></tr>
+      <tr><td style="color:var(--c-header)">#</td><td><b>Header</b> — producer, schema-version, commit, row count <span style="color:var(--fg-faint)">(+ v0.2: seq, parent hash, master|diff, timestamp)</span></td><td><code># factstack/0.3.10 agent-v4 88e9a1b 5000</code></td></tr>
+      <tr><td style="color:var(--c-meta)">;</td><td><b>Meta</b> (v0.2) — in-band legend, <code>; hot:</code> hints, and the final integrity trailer</td><td><code>; end rows=5000 tables=12 sha256=7af2c59b6d8a</code></td></tr>
+      <tr><td style="color:var(--c-dict)">@</td><td><b>Dictionary</b> — intern a repeated string under a short key</td><td><code>@ F1=src/auth.ts</code></td></tr>
+      <tr><td style="color:var(--c-schema)">&amp;</td><td><b>Schema</b> — table name + columns; <b>UPPERCASE columns are interned</b> (cells hold dictionary keys)</td><td><code>&amp; symbols id k n F l</code></td></tr>
+      <tr><td style="color:var(--c-row)">-</td><td><b>Row</b> — tab-separated cells, positional per the active schema</td><td><code>- 1 fn login F1 42</code></td></tr>
+      <tr><td style="color:var(--c-add)">+</td><td><b>Added row</b> — incremental packs</td><td><code>+ 6 fn reset F1 70</code></td></tr>
+      <tr><td style="color:var(--c-del)">x</td><td><b>Deleted row</b> — by primary key, incremental packs</td><td><code>x 3</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="example">
+  <div class="wrap">
+    <h2><span class="no">03</span>Worked Examples</h2>
+    
+    <h3>1. Symbol Table Mapping</h3>
+    <div class="duo">
+      <div class="listing">
+        <div class="title">symbols.pack — ≈ 60 tokens</div>
+<pre><code><span class="ln p-h"><span class="sig">#</span> facts/0.1 symbols-v1 88e9a1b 5</span>
+<span class="ln p-d"><span class="sig">@</span> F1=src/auth.ts</span>
+<span class="ln p-d"><span class="sig">@</span> F2=src/users.ts</span>
+<span class="ln p-s"><span class="sig">&amp;</span> symbols  id  k    n       F   l</span>
+<span class="ln p-r"><span class="sig">-</span> 1   fn   login   F1  42</span>
+<span class="ln p-r"><span class="sig">-</span> 2   fn   logout  F1  58</span>
+<span class="ln p-r"><span class="sig">-</span> 3   cls  User    F1  10</span>
+<span class="ln p-r"><span class="sig">-</span> 4   fn   signup  F2  12</span>
+<span class="ln p-r"><span class="sig">-</span> 5   fn   list    F2  25</span></code></pre>
+      </div>
+      <div class="listing">
+        <div class="title">symbols.json — ≈ 150 tokens</div>
+<pre><code>[
+ {"id":1,"kind":"fn","name":"login",
+  "file":"src/auth.ts","line":42},
+ {"id":2,"kind":"fn","name":"logout",
+  "file":"src/auth.ts","line":58},
+ {"id":3,"kind":"cls","name":"User",
+  "file":"src/auth.ts","line":10},
+ {"id":4,"kind":"fn","name":"signup",
+  "file":"src/users.ts","line":12},
+ {"id":5,"kind":"fn","name":"list",
+  "file":"src/users.ts","line":25}
+ ]</code></pre>
+      </div>
+    </div>
+    <p>Row 1 reads: <i>symbol 1, kind <code>fn</code>, name <code>login</code>, file <code>src/auth.ts</code>
+      (expanded from <code>F1</code> — the <code>F</code> column is uppercase, so its cells are dictionary keys), line 42.</i></p>
+
+    <h3>2. Multi-table streams &amp; incremental updates</h3>
+    <p>One pack can carry several tables — each <code>&amp;</code> line switches the active schema —
+      so symbols, imports, and findings travel in a single response. And a follow-up payload
+      ships <b>only what changed</b>:</p>
+    <div class="listing">
+      <div class="title">refresh.pack — row count 0 = “patch only”</div>
+<pre><code><span class="ln p-h"><span class="sig">#</span> facts/0.1 symbols-v1 88e9a1b 0</span>
+<span class="ln p-d"><span class="sig">@</span> F1=src/auth.ts</span>
+<span class="ln p-s"><span class="sig">&amp;</span> symbols  id  k   n      F   l</span>
+<span class="ln p-a"><span class="sig">+</span> 6   fn  reset  F1  70</span>
+<span class="ln p-x"><span class="sig">x</span> 3</span></code></pre>
+    </div>
+    <p>v0.2 formalizes this into <b>hash-linked chains</b>: an immutable <code>master.&lt;seq&gt;.pack</code>
+      plus per-commit <code>.pack-diff</code> files, each naming its parent's SHA-256. A session pins its
+      master and appends diffs — so the LLM provider's <b>prompt cache</b> keeps serving the large prefix
+      at cached-read prices (~10× cheaper than fresh input on typical providers) instead of being
+      invalidated by every refresh.</p>
+
+    <h3>3. Dependency Import Graphs</h3>
+    <p>This sample represents a dependency graph where files (column <code>F</code>) import target libraries/modules (column <code>TO</code>). Both columns are uppercase and thus dictionary interned:</p>
+    <div class="listing">
+      <div class="title">imports.pack — Tabular representation of module imports</div>
+<pre><code><span class="ln p-h"><span class="sig">#</span> factstack/0.3.10 imports-v1 88e9a1b 3</span>
+<span class="ln p-d"><span class="sig">@</span> F1=src/auth.ts</span>
+<span class="ln p-d"><span class="sig">@</span> F2=src/users.ts</span>
+<span class="ln p-d"><span class="sig">@</span> F3=src/db.ts</span>
+<span class="ln p-d"><span class="sig">@</span> T1=react</span>
+<span class="ln p-d"><span class="sig">@</span> T2=../db</span>
+<span class="ln p-s"><span class="sig">&amp;</span> imports  id  F   TO</span>
+<span class="ln p-r"><span class="sig">-</span> 1   F1  T1</span>
+<span class="ln p-r"><span class="sig">-</span> 2   F2  T1</span>
+<span class="ln p-r"><span class="sig">-</span> 3   F2  T2</span>
+; end rows=3 tables=1 sha256=f8e912ab34cd</code></pre>
+    </div>
+
+    <h3>4. Prose Audit Fix-Pack Profile</h3>
+    <p>FactsPack trust laws (like the legend, the header SHA, and the integrity check) can also govern structured prose work-orders. Here is how an accessibility check is packed for a fixing agent:</p>
+    <div class="listing">
+      <div class="title">accessibility-audit.pack — Prose fix-pack profile</div>
+<pre><code>facts+ audit pack · v0.2
+project: demo-app
+commit: 88e9a1b2
+grade: F (31/100 assessed checkpoints pass)
+
+=== 1 FAILING CHECKPOINT ===
+
+--- ISSUE 1/1 ---
+id: PER-001
+severity: critical
+category: performance
+problem: Image element lacks an alt attribute
+why: Screen readers cannot describe the image to visually impaired users
+location: index.html:10:5 ~4678
+code:
+  10: &lt;img src="/logo.png"&gt; &lt;&lt;&lt;
+fix:
+  Add an alt attribute to explain the image purpose, or alt="" if decorative:
+  &lt;img src="/logo.png" alt="Demo App logo"&gt;
+
+=== END OF PACK · 1 issue · commit 88e9a1b2 ===</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="recipes">
+  <div class="wrap">
+    <h2><span class="no">04</span>Agent Recipes — Coding Integration</h2>
+    <p class="lead">AI coding agents don't just read `.pack` files; they use them to orient, navigate, patch, and verify codebases. Here are three standard integration recipes:</p>
+    
+    <div class="cards">
+      <div class="card">
+        <h4>Recipe 1: Entrypoint Discovery</h4>
+        <p>Before reading raw files, the agent queries the <code>top</code> table sorted by <code>PageRank</code> metrics to find central modules:</p>
+        <pre style="font-size:0.73rem; padding: 10px; margin-top: 10px; background:var(--bg2); border:1px solid var(--line); border-radius:6px; color:var(--fg-dim);"><code>1. Parse "top" table from agent.pack
+2. Sort files by "importance" rank
+3. Identify highest-ranked files as
+   entrypoints for architecture trace</code></pre>
+      </div>
+      
+      <div class="card">
+        <h4>Recipe 2: Call Graph Resolution</h4>
+        <p>To trace data flows without running slow text searches, the agent resolves mappings in the <code>calls</code> table using symbol IDs:</p>
+        <pre style="font-size:0.73rem; padding: 10px; margin-top: 10px; background:var(--bg2); border:1px solid var(--line); border-radius:6px; color:var(--fg-dim);"><code>1. Find function in "declarations"
+2. Match symbol ID in "calls"
+   (caller_id -> callee_id)
+3. Walk symbol IDs in memory to
+   resolve the dependency flow</code></pre>
+      </div>
+
+      <div class="card">
+        <h4>Recipe 3: Dynamic State Patching</h4>
+        <p>To keep its internal codebase model updated over a long chat session while keeping API costs low:</p>
+        <pre style="font-size:0.73rem; padding: 10px; margin-top: 10px; background:var(--bg2); border:1px solid var(--line); border-radius:6px; color:var(--fg-dim);"><code>1. Load baseline master.1.pack (Cached)
+2. Make code edits in the workspace
+3. Call "facts refresh" tool
+4. Apply + and x deltas from pack-diff
+5. Keep prompt cache intact</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="trust">
+  <div class="wrap">
+    <h2><span class="no">05</span>Built for a consumer that hallucinates</h2>
+    <p class="lead">Classic formats assume a parser that either succeeds or throws. FactsPack assumes a
+      <i>language model</i> — a reader that guesses when underinformed, trusts what it reads, and acts on
+      stale facts confidently. The v0.2 trust laws answer each failure mode:</p>
+    <div class="cards">
+      <div class="card"><h4>in-band legend</h4><p>Every pack documents its own tables, columns, and units in plain language (<code>;</code> lines). <b>Self-description beats compression</b> — a cold model needs no external spec.</p></div>
+      <div class="card"><h4>integrity trailer</h4><p>The final line — <code>; end rows=… tables=… sha256=…</code> — makes truncation and tampering detectable. Missing or mismatched? <b>Reject, never best-effort parse.</b></p></div>
+      <div class="card"><h4>injection armor</h4><p>Cell values and quoted code are <b>data, never instructions</b>. Source carried inside a pack cannot address the reading agent.</p></div>
+      <div class="card"><h4>freshness contract</h4><p>The header carries the git commit it was built from. Differs from HEAD? The pack is stale — <b>regenerate before trusting facts</b>.</p></div>
+      <div class="card"><h4>determinism</h4><p>Identical input → <b>byte-identical pack</b>. “Skip when unchanged” becomes decidable, and cache prefixes stay stable.</p></div>
+      <div class="card"><h4>the agent ritual</h4><p><b>The tool types, the agent signs.</b> Packs are emitted by tools and validated by decoders; agents annotate — they never hand-write facts.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="profiles">
+  <div class="wrap">
+    <h2><span class="no">06</span>One standard, two profiles</h2>
+    <div class="cards">
+      <div class="card">
+        <h4>tabular map-pack</h4>
+        <p>The grammar above. Used by <b>factstack</b> for its codebase map (<code>agent.pack</code>, wire tag
+        <code>agent-v4</code>): 13 tables — a ranked <code>top</code> head, files, imports, routes, risks, envs,
+        declarations, symbols, calls, node metrics, rationale, entities, entity edges.</p>
+      </div>
+      <div class="card">
+        <h4>prose fix-pack</h4>
+        <p>The <b>facts+</b> audit work-order: severity-ordered issues, each self-contained — id, severity,
+        problem, why it matters, standards, exact <code>file:line:col</code> location with a content hash,
+        quoted code with the cited line marked <code>&lt;&lt;&lt;</code>, and the fix. Same trust laws, prose body.
+        Its saving is <b>eliminated tool calls</b>, not compression.</p>
+      </div>
+    </div>
+    <h3>Real samples in this repository</h3>
+    <table>
+      <tr><th>File</th><th>What it shows</th></tr>
+      <tr><td style="font-size:.8rem">research/realworld/<br>factstack-on-ecom.agent-v3.pack</td>
+          <td>A complete small map-pack (140 lines, 95 rows, 9 tables, ~7 KB) of a React e-commerce app. <b>Start here</b> — readable in one screen.</td></tr>
+      <tr><td style="font-size:.8rem">research/realworld/<br>factstack-on-factsplus.agent-v3.pack</td>
+          <td>Interning at scale: 1,660 lines, 1,386 rows, 12 tables, ~104 KB ≈ 100k tokens. The JSON equivalent is ~2.8 MB ≈ 700k tokens — it doesn't fit a 200k context window at all.</td></tr>
+      <tr><td style="font-size:.8rem">research/realworld/<br>factsplus-on-factstack-v3/agent.pack</td>
+          <td>The prose fix-pack profile: graded audit (A · 93/100), 5 failing checkpoints with locations, snippets, and fixes — beside the 554 KB <code>audit.json</code> it replaces for agents.</td></tr>
+    </table>
+    <div class="note"><b>Version note:</b> the two tabular samples are <code>agent-v3</code> archives — v0.1-era
+      wire that predates <code>;</code> meta lines, so they carry no legend or trailer. v0.2 packs
+      (<code>agent-v4</code>) add the legend, hot hints, integrity trailer, unified file ids, relative-day
+      timestamps, and chain header fields.</div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <h2><span class="no">07</span>How it compares</h2>
+    <p class="lead">Every ingredient — positional rows, sigil prefixes, dictionary encoding, delta rows,
+      hash chains, self-description — exists somewhere in prior art. <b>The invention is the combination</b>,
+      tuned for one new consumer: an LLM reading data inside a paid, cache-priced context window.</p>
+    <table class="cmp">
+      <tr><th>Format</th><th>Shares</th><th>FactsPack difference</th></tr>
+      <tr><td>TOON <span style="color:var(--fg-faint);font-weight:400">— the dominant LLM format, ~16k★</span></td><td>Same headline goal; schema-once positional rows; declared row counts as a completeness guardrail</td><td>TOON is a lossless JSON replacement. PACK adds the envelope it lacks: dictionary interning, multi-table streams, diffs, hash chains, integrity trailer, cold-read legend, trust rules.</td></tr>
+      <tr><td>TRON · CTON · JTON · TERSE <span style="color:var(--fg-faint);font-weight:400">(2025–26 siblings)</span></td><td>Schema-once positional rows for LLM token savings</td><td>All optimize the <i>row</i> layer; none has interning, multi-table framing, hash-chained diffs, an integrity trailer, or an injection rule — PACK's distinct value is the envelope.</td></tr>
+      <tr><td>CSV / TSV</td><td>Schema-once positional rows; TSV rows <i>are</i> PACK's row layer</td><td>Interning, multi-table, typed prefixes, increments, integrity trailer — and no quoting layer to get wrong.</td></tr>
+      <tr><td>JSON Lines / NDJSON</td><td>Line-oriented, streamable</td><td>JSONL repeats every key per record — the exact overhead PACK removes.</td></tr>
+      <tr><td>ARFF (Weka)</td><td>Declared schema + positional rows — closest classic “schema once” ancestor</td><td>Single table, no interning, no increments, no integrity layer; built for ML datasets, not agent wire traffic.</td></tr>
+      <tr><td>VCF / SAM / GFF3</td><td>Closest structural ancestors: sigil-prefixed headers + tab-separated rows; SAM's <code>@</code> is the nearest one-char-prefix precedent</td><td>Domain-fixed genomic schemas; reference-by-id only; integrity lives in external indexes, never an in-band trailer; no LLM legend or trust rules.</td></tr>
+      <tr><td>RDF Turtle <code>@prefix</code> / JSON-LD <code>@context</code></td><td>The cleanest text precedent for <code>@</code>-aliasing repeated strings — and for the <code>@sigil</code> itself</td><td>PACK generalizes it to one flat dictionary shared across every table in the stream, read directly by the model.</td></tr>
+      <tr><td>Apache Avro</td><td>In-band writer schema + formal schema evolution</td><td>Avro is binary; PACK is text and versions via the header with explicit major/minor rules.</td></tr>
+      <tr><td>Parquet / Arrow</td><td>Dictionary encoding — the same compression idea</td><td>Binary &amp; columnar: needs a library between data and model. PACK applies the idea in a form an LLM reads directly.</td></tr>
+      <tr><td>Protobuf / ASN.1 / CBOR / MessagePack</td><td>Schema-once positional or compact serialization</td><td>Binary is token-hostile — base64 into a prompt costs <i>more</i> than JSON, and a model can't read it cold.</td></tr>
+      <tr><td>JSON Patch / unified diff · git · Delta Lake / Iceberg</td><td>Incremental updates &amp; hash-linked append-only history</td><td>PACK's <code>+</code>/<code>x</code> are schema-aware row ops carrying provenance; its linear master/diff chain is purpose-built for LLM prompt-cache stability.</td></tr>
+      <tr><td>Markdown tables · llms.txt · Repomix</td><td>LLM-friendly rendering / “prepare content for LLMs”</td><td>Content &amp; packaging conventions with no machine contract; PACK is a data format with a grammar, decoder, and validation.</td></tr>
+    </table>
+
+    <div class="note"><b>An honest word on the numbers.</b> The −81% / −91% figures are the author's
+      measurements on codebase-map payloads, where file paths repeat thousands of times — the case interning
+      is built for. Independent benchmarks of <i>schema-once</i> LLM formats land lower (~28–40% vs JSON);
+      PACK reaches the high end only because three savings stack — dropping JSON's per-row keys,
+      <b>interning</b> heavy repeated strings, and shipping <b>deltas</b> instead of whole tables. Believable
+      for this workload, weaker without repetition. <b>Measure on your own payloads.</b></div>
+
+    <h3>Not to be confused with</h3>
+    <p style="color:var(--fg-dim);font-size:.94rem;max-width:50em">The name <b>“FactsPack” is clear</b>
+      (unclaimed on npm, PyPI, crates.io, GitHub as of June 2026) — but the <code>.pack</code> <i>extension</i>
+      is crowded, so the format is identified by its <code>#</code> header line, never the extension.</p>
+    <details>
+      <summary>Git packfiles (<code>.git/objects/pack/*.pack</code>) — the dominant association</summary>
+      <div class="body">Git's internal <i>binary</i> object storage uses the same extension — zero relation.
+        A FactsPack always begins with a <code>#</code> header line and is plain UTF-8 text; a git packfile
+        begins with the binary magic <code>PACK</code>. (A web search for “pack format” returns git's docs first.)</div>
+    </details>
+    <details>
+      <summary>Total War PackFile · Java Pack200 · libGDX atlas · CMSIS-Pack · Minecraft “pack format”</summary>
+      <div class="body">Binary game-asset archives, a dead JAR compressor, texture atlases, embedded-toolchain
+        zip archives, and a Minecraft version integer (its packs are actually <code>.zip</code>/<code>.mcpack</code>).
+        All unrelated — the <code>#</code>-header sniff test distinguishes them. A secondary extension like
+        <code>.fpack</code> is a reasonable escape hatch if tooling ever misclassifies <code>.pack</code> as binary.</div>
+    </details>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2><span class="no">08</span>Use it in five minutes</h2>
+    <ul>
+      <li><b>Reading:</b> paste the 8-line preamble from <code>FACTSPACK_PROMPT.md</code> into any LLM conversation — or just hand a v0.2 pack over; its in-band legend covers a cold reader.</li>
+      <li><b>Writing:</b> emit a <code>#</code> header, a <code>;</code> legend, <code>@</code> entries for repeated strings, one <code>&amp;</code> per table, <code>-</code> rows, and the <code>; end</code> trailer. Intern only columns whose values repeat.</li>
+      <li><b>Validating:</b> the reference encoder/decoder (TypeScript, zero runtime deps, 143 tests) ships in factstack's <code>packages/factspack</code>; the decoder is strict — reject, never best-effort.</li>
+      <li><b>Don't:</b> use it for storage, browsers, small varied records, trees, prose, nested objects in cells, or binary blobs. JSON, plaintext, and Markdown keep those jobs.</li>
+    </ul>
+    <div class="note"><b>Read next:</b> <code>FACTSPACK.md</code> — the canonical spec (§1–§17) ·
+      <code>docs/PACK-FORMAT-GUIDE.md</code> — the long-form guide this page summarizes ·
+      <code>PACK_VISUAL_MODEL.md</code> — diagrams &amp; cache economics.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h2 style="font-size:1.25rem;margin-bottom:6px">Authorship &amp; citation</h2>
+    <p>The FactsPack format — its grammar, trust laws, and master/diff chain design — was invented and
+      specified by <b style="color:var(--accent)">Aditya Mishra</b>
+      (<a href="mailto:adityamishra1477@gmail.com">adityamishra1477@gmail.com</a>) as part of the
+      FACTs (Fun AI Coding Tools) project family. v0.1 design-locked 2026-04-24; v0.2 standard
+      specified and implemented June 2026.</p>
+    <div class="cite">Mishra, A. (2026). <i>FactsPack (.pack): a token-efficient, agent-first wire format
+      for structured data.</i> Standard v0.2.</div>
+    <div class="foot-meta">
+      <span>© 2026 Aditya Mishra</span>
+      <span>License: AGPL-3.0</span>
+      <span>Standard v0.2 · wire tag agent-v4</span>
+      <span>Machine-citable: CITATION.cff</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const toggle = document.getElementById('theme-toggle');
+  toggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    if (current === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+      toggle.textContent = '☀️ Light Mode';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      toggle.textContent = '🌙 Dark Mode';
+    }
+  });
+</script>
+
+</body>
+</html>

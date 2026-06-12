@@ -1,12 +1,15 @@
 # facts-pack — the FactsPack (`.pack`) standard
 
+**Live site & converter:** https://o0am.github.io/facts.pack/ — paste data, get a `.pack`,
+see per-agent cost savings. **ELI5:** https://o0am.github.io/facts.pack/eli5/caveman/
+
 Dedicated home for the `.pack` format: the token-efficient, agent-first artifact family.
 Centralized here on 2026-06-11 from `claude/factstack/docs/` and `facts+/docs/` (stub
 pointers remain at the old paths).
 
 `.pack` is a cornerstone of **factstack** (the dictionary-compressed codebase map,
-`agent.pack`, wire tag `agent-v3` today) and **facts+** (the prose audit fix-pack,
-`agent.pack · v1` today). The facts-tree/facts-open line never used it — its agent surface
+`agent.pack`, wire tag `agent-v4` today) and **facts+** (the prose audit fix-pack,
+`agent.pack · v0.2` today). The facts-tree/facts-open line never used it — its agent surface
 is plain JSON snapshots.
 
 ## Contents
@@ -14,7 +17,8 @@ is plain JSON snapshots.
 | File | What it is |
 |---|---|
 | `docs/PACK-FORMAT-GUIDE.md` | **Start here — the user's guide.** Friendly long-form introduction: anatomy, worked examples, real sample walkthroughs, prior-art comparison, FAQ, authorship & citation. |
-| `docs/index.html` | **The web explainer** — self-contained single-page site (GitHub-Pages-ready) telling the same story visually. |
+| `docs/index.html` | **The deployed landing page** (https://o0am.github.io/facts.pack/) — app-style single page: in-browser paste-to-pack converter with per-agent cost comparison, savings playground, and the format tour. |
+| `test/validate.mjs` | **Validation battery** — the web converter's output checked case-by-case against the reference decoder (15 cases incl. adversarial traps, escapes/unicode, 1,500-row scale; strict v0.2 trailer + sha256). |
 | `llms.txt` | **AI Agent Entrypoint** — Token-dense overview of the spec, grammar, and prompt-caching design rules optimized for LLM search indexers and agents. |
 | `AUTHORS.md` | Authorship — the format was invented and authored by **Aditya Mishra**. |
 | `CITATION.cff` | Machine-readable citation metadata (GitHub "Cite this repository"). |
@@ -27,24 +31,24 @@ is plain JSON snapshots.
 | `PACK-V0.2-PLAN.md` | **The v0.2 build plan** — spec changes (S1–S13), factspack library changes (L1–L8), factstack pipeline changes (C1–C10), the agent checkpoint ritual, rollout phases, token-economics appendix, and the R1–R29 recommendation traceability table. |
 | `PACK-V0.2-PLAN-factsplus.md` | The facts+ fix-pack workstream (D0–D7) — independent, can land first. |
 | `research/2026-06-11-design-notes.md` | Distilled design context: LLM-usefulness assessment, adversarial-review findings, the immutability→diff→pinning design evolution, economics. |
-| `research/2026-06-11-grounding-*.md` | Verified deep-read reports: the spec, the factspack encoder/decoder (+103 tests), every factstack producer/consumer, the facts+ fix-pack surface, and the adversarial fact-check verdicts. |
+| `research/2026-06-11-grounding-*.md` | Verified deep-read reports: the spec, the factspack encoder/decoder (103 tests at review time; 100+ today), every factstack producer/consumer, the facts+ fix-pack surface, and the adversarial fact-check verdicts. |
 
 ## AI Agent Quick Start
 
 If you are an AI coding agent reading this repository:
-1. **Read [llms.txt](file:///d:/dev/ai agents/facts-pack/llms.txt) first** to get a token-dense overview of the format rules, grammar, and validation instructions.
-2. **Ingest [FACTSPACK_PROMPT.md](file:///d:/dev/ai agents/facts-pack/FACTSPACK_PROMPT.md)** to obtain the exact rules and instructions for parsing and writing `.pack` streams in downstream conversations.
-3. **Reference [PACK_VISUAL_MODEL.md](file:///d:/dev/ai agents/facts-pack/PACK_VISUAL_MODEL.md)** for visual parser flows, data schemas, and token size comparison tables.
+1. **Read [llms.txt](llms.txt) first** to get a token-dense overview of the format rules, grammar, and validation instructions.
+2. **Ingest [FACTSPACK_PROMPT.md](FACTSPACK_PROMPT.md)** to obtain the exact rules and instructions for parsing and writing `.pack` streams in downstream conversations.
+3. **Reference [PACK_VISUAL_MODEL.md](PACK_VISUAL_MODEL.md)** for visual parser flows, data schemas, and token size comparison tables.
 
 ## Licensing & Contributions
 
-This project is licensed under the **GNU Affero General Public License v3.0** (see [LICENSE](file:///d:/dev/ai agents/facts-pack/LICENSE)). 
+This project is licensed under the **GNU Affero General Public License v3.0** (see [LICENSE](LICENSE)). 
 
 ### Commercial Dual Licensing
 Because the original creator (**Aditya Mishra**) retains full copyright ownership, the codebase can be multi-licensed. If you want to use the `.pack` format in a closed-source commercial SaaS/PaaS system or integrate it into proprietary AI stacks (e.g. OpenAI, Anthropic) without releasing your codebase under the AGPL, you must purchase a commercial license from the author.
 
 ### Contributing & CLA
-To contribute modifications or improvements to the specification, please read [CONTRIBUTING.md](file:///d:/dev/ai agents/facts-pack/CONTRIBUTING.md). 
+To contribute modifications or improvements to the specification, please read [CONTRIBUTING.md](CONTRIBUTING.md). 
 > [!IMPORTANT]
 > All pull requests require a signed agreement to the Contributor License Agreement (CLA) in the PR description:
 > `"I agree to the FactsPack Contributor License Agreement (CLA)."`
