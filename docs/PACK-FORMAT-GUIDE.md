@@ -110,6 +110,12 @@ Measured on representative payloads:
 | Import edges (10,000) | 200k tok | 55k tok | **18k tok** | **−91%** |
 | Findings (200) | 28k tok | 12k tok | **8k tok** | **−71%** |
 
+> These are the author's measurements on FACTs codebase-map payloads, where
+> the same file paths repeat thousands of times — exactly the case interning
+> is built for. Savings on data *without* heavy repetition are smaller. See
+> [§10.5](#105-an-honest-word-on-the-token-numbers) for honest calibration
+> against third-party format benchmarks, and measure on your own payloads.
+
 ## 4. Multiple tables in one stream
 
 A pack may declare several `&` schemas; rows bind to the most recent one.
@@ -228,7 +234,7 @@ app. 140 lines, 95 rows, 9 populated tables, ~7 KB. You can read the whole
 thing in one screen. Real excerpt:
 
 ```
-# factstack/0.3.10	agent-v3	2026-06-11T19:30:35.564Z	95
+# factstack/0.3.10	agent-v3	2026-06-11T19:30:55.600Z	95
 @ L4=javascript
 @ F4=makercentral_v1/src/lib/fb.js
 …
@@ -259,7 +265,7 @@ self-describing preamble of reading rules, then issues ordered
 critical-first, each with locations like
 `apps/ui-remix/public/briefing.html:591:29 ~3966` (path : line : column,
 plus a content hash so the issue survives line drift), quoted code with
-the cited line marked `<<<`, and a concrete fix. 360 lines. Sits beside
+the cited line marked `<<<`, and a concrete fix. 369 lines. Sits beside
 the `audit.json` (554 KB) and `report.html` (380 KB) it replaces for
 agent consumption.
 
@@ -272,42 +278,117 @@ agent consumption.
 
 ## 10. How `.pack` compares to other formats
 
-There are many tabular and line-oriented formats. FactsPack borrows
-deliberately from several traditions and adds an agent-specific layer none
-of them have. An honest map of the neighborhood:
+There are many tabular and line-oriented formats, and as of 2025–2026 there
+is also a fast-growing family of formats built specifically to cut LLM token
+cost. FactsPack borrows deliberately from several traditions and adds an
+agent-specific layer none of them have. This map of the neighborhood is
+deliberately honest — including where prior art got there first.
+
+### 10.1 The new LLM-token-format wave (closest cousins)
+
+This is the most directly comparable group, and the place reviewers will
+look first.
 
 | Format | Shares with `.pack` | What `.pack` adds / does differently |
 |---|---|---|
-| **CSV / TSV** | Schema-once, positional rows, delimiter-separated | String interning; multiple tables per stream; typed line prefixes; incremental `+`/`x`; integrity trailer; in-band legend. CSV quoting is notoriously irregular (RFC 4180 vs reality); PACK has three escapes and no quoting layer. |
-| **JSON Lines / NDJSON** | Line-oriented, append-friendly, streamable | JSONL repeats every key on every record — the exact overhead PACK exists to remove. PACK is ~5× cheaper in tokens on homogeneous tables. |
-| **TOON** (Token-Oriented Object Notation, 2025) | Same goal: cut LLM token cost of structured data; tabular "fields once" arrays | TOON is a JSON-replacement *syntax* (indentation-based, YAML-like) for arbitrary nested data. PACK is narrower and goes further on its niche: dictionary interning of repeated strings (TOON has none), multi-table streams, incremental diffs, hash chains, integrity trailer, freshness + injection rules. |
+| **TOON** (Token-Oriented Object Notation, 2025 — the dominant one, ~16k★) | Same headline goal: cut LLM token cost of structured data; declares fields once then streams positional rows; declared row counts as a completeness guardrail (its `[N]` ≈ PACK's `rows=N`); tab delimiter option; explicitly "LLM input, not storage" | TOON is a *lossless JSON replacement* (YAML-like indentation for arbitrary nesting). PACK is narrower (flat tables) but adds the layer TOON lacks entirely: dictionary interning of repeated strings, multi-table streams, incremental `+`/`x` diffs, hash-linked master/diff chains for prompt-cache stability, a required sha256 integrity trailer, a cold-read legend, freshness + injection rules. |
+| **TRON, CTON, JTON/"Zen Grid", TERSE** (2025–2026 JSON-superset / compact siblings) | All use the schema-once, positional-rows idea for LLM token savings; several are deterministic and round-trippable | Each remains close to JSON's data model; **none** has interning, multi-table streams, hash-chained diffs, an integrity trailer, a legend, or an injection rule. They optimize the *row layer*; PACK's distinct value is the *envelope* around it. |
+| **JSON Lines / NDJSON** | Line-oriented, append-friendly, streamable | JSONL repeats every key on every record — the exact overhead PACK removes. PACK is several times cheaper in tokens on homogeneous tables. |
+
+### 10.2 Classic tabular & line-oriented formats (the ancestry)
+
+| Format | Shares with `.pack` | What `.pack` adds / does differently |
+|---|---|---|
+| **CSV / TSV** | Schema-once, positional rows, delimiter-separated; TSV rows are literally PACK's row layer | String interning; multiple tables per stream; typed line prefixes; incremental `+`/`x`; integrity trailer; in-band legend. CSV quoting is notoriously irregular (RFC 4180 vs reality); PACK has three escapes and no quoting layer. |
+| **ARFF** (Weka) | Declared schema section (`@attribute`) then positional `@data` rows — the closest classic "schema once + sigil sections" ancestor | Single table, no interning, no increments, no integrity layer; designed for ML datasets, not agent wire traffic. (`@` means *section keyword* in ARFF but *dictionary entry* in PACK — a confusable overlap.) |
 | **LTSV** | Tab-separated, line-oriented | LTSV labels every field on every line (`key:value\t…`) — self-describing per-line but pays JSON-like repetition. |
-| **ARFF** (Weka) | Declared schema section (`@attribute`) then positional `@data` rows — the closest classic "schema once" ancestor | Single table, no interning, no increments, no integrity layer; designed for ML datasets, not agent wire traffic. |
-| **VCF / SAM / GFF3** (bioinformatics) | The closest *structural* ancestors: one-character/sigil line prefixes, `##`/`@` metadata headers, a column-header line, tab-separated rows, escaping conventions | Domain-fixed schemas (genomic columns are baked in); no general dictionary interning (VCF interns contigs/INFO keys only); no incremental row ops; no LLM-facing legend or trust rules. |
-| **GNU recutils** | Plain-text database with typed records, human-editable | Field name repeated on every line of every record; optimized for hand-editing, not token economy. |
-| **Apache Parquet / Arrow** | Dictionary encoding of repeated strings — the same core compression idea | Binary and columnar: unreadable to humans *and* to LLMs as text; needs a library between the data and the model. PACK applies dictionary encoding in a form a model reads directly. |
-| **Protobuf / MessagePack / CBOR / Avro** | Compact serialization with external or embedded schemas | Binary wire formats — token-hostile (base64ing them into a prompt costs *more* than JSON) and unreadable cold. |
-| **JSON Patch (RFC 6902)** | Standardized incremental updates | Operates on a JSON document tree; PACK's `+`/`x` rows operate on tables and compose with interning and chains. |
-| **Unified diff / git deltas** | Append-only change streams, hash-linked history (git's commit DAG) | Line-level text diffs, not schema-aware row ops. |
-| **Markdown pipe tables** | LLM-friendly, human-readable tables | No machine contract at all: no escaping rules, no schema versioning, no integrity, terrible for >100 rows. |
-| **llms.txt / repomix-style context bundles** | "Prepare a repo for LLM consumption" goal | Those are *content* conventions (concatenated prose/source); PACK is a *data* format with a grammar, a decoder, and validation. |
+| **GNU recutils** | In-band self-describing schema, types, *and* human docs (`%rec`/`%doc`) — strong precedent for PACK's `&` schemas + `;` legend | Record-oriented (one record spans many `Field: value` lines, repeating field names); a human-editable storage database with a query toolchain — not a write-once wire format; no interning, diffs, or integrity trailer. |
+| **VCF / SAM / GFF3** (bioinformatics) | The closest *structural* ancestors: sigil line prefixes, `##`/`@` metadata headers, a column-header line, tab-separated rows. SAM's single-char `@` header prefix is the nearest precedent for PACK's one-char prefixes; VCF already does strong in-band self-description (`##INFO`/`##FORMAT`) | Domain-fixed genomic schemas; reference-by-id only (contigs, `@SQ`, GFF `ID=`/`Parent=`) — not a general string dictionary; data rows are *unprefixed*; integrity lives in external indexes (tabix, `.bai`), never an in-band signed trailer; no LLM legend or trust rules. |
 
-**The honest one-line summary:** every individual ingredient — positional
-rows, sigil prefixes, dictionary encoding, delta rows, hash chains,
-self-description — exists somewhere in prior art. What did not exist
-before FactsPack is the *combination*, selected and tuned for one new
-consumer: a large language model reading structured data inside a paid,
-cache-priced context window, under explicit trust rules. That is the
-invention.
+### 10.3 The techniques PACK combines (where each already exists)
 
-### Not to be confused with…
+| Technique / format | Prior art it comes from | How PACK uses it differently |
+|---|---|---|
+| **`@`-sigil dictionary interning** | **RDF Turtle `@prefix` and JSON-LD `@context`** are the cleanest text precedents for aliasing long repeated strings to short `@` names — and even for the `@` sigil itself. Apache **Parquet/Arrow** do the same as binary dictionary encoding. | PACK applies it as plain text an LLM reads directly (Parquet/Arrow are binary, library-only), with one flat dictionary shared across all tables in the stream. |
+| **In-band schema + schema evolution** | **Apache Avro** embeds the writer schema in the file header then streams compact records, with formal evolution rules — the closest mainstream precedent for PACK's in-band schema + schema-version. | Avro is binary; PACK is text, and versions via the header `<schema>-v<n>` with explicit major/minor rules (§11 of the spec). |
+| **Schema-once positional records** | **Protocol Buffers / FlatBuffers / Thrift / ASN.1** — decades of "declare the schema once, send records keyed by number/position, not name." | Those are binary and need the schema out-of-band to decode; PACK is self-describing text. |
+| **Row/document diffs** | **JSON Patch (RFC 6902)** (tree ops), **unified diff** (line ops). | PACK's `+`/`x` operate on *rows of declared tables*, carry provenance (commit, seq, parent-hash), and compose with interning. (Note: `-` is a *baseline row* in PACK but a *removed line* in unified diff — a deliberate, documented divergence; deletion in PACK is `x`.) |
+| **Hash-linked, append-only chains** | **Git's commit DAG**, **Delta Lake / Apache Iceberg** transaction logs, **Certificate Transparency** (RFC 6962) Merkle logs. | PACK uses a simple linear master→diff parent-hash chain (no Merkle proofs, no signatures) purpose-built for one thing these don't target: **LLM prompt-cache prefix stability**. |
+| **Prompt-cache economics** | **Anthropic / OpenAI prefix caching** — a byte-identical prefix is served at a large discount (Anthropic cached *reads* ≈ 0.1× base input); appended content after the cached prefix is cheap. | PACK's determinism + append-only diffs are *engineered to keep the master a stable cached prefix*. The format doesn't cache anything itself; it shapes artifacts so provider caches hit. (Caches are short-lived — 5 min to ~1 h — so the win is within an agent session, not for artifacts at rest.) |
+
+### 10.4 Adjacent, but a different job
+
+| Format / tool | Relationship |
+|---|---|
+| **Binary serializers — Protobuf, MessagePack, CBOR (RFC 8949), Avro** | Compact for *machines*, but **token-hostile**: base64-ing them into a prompt costs *more* than JSON, and an LLM can't read them cold. PACK is text on purpose. |
+| **Markdown / GitHub-Flavored-Markdown pipe tables** | The default tabular rendering LLMs are trained on, and the usual head-to-head baseline. No machine contract: no escaping rules, no schema versioning, no integrity; collapses past ~100 rows. |
+| **llms.txt, Repomix / gitingest, Frictionless "Data Package", CSVW** | "Prepare content/data for LLMs (or describe a dataset)" conventions. Those are *content/packaging* conventions; PACK is a *data wire format* with a grammar, a decoder, and validation. |
+| **LLMLingua / HYVE** (prompt compression / hybrid views) | Same goal (cheaper LLM input) by a different mechanism — lossy/model-driven compression or a runtime datastore. PACK is lossless, deterministic, and a static self-contained artifact; orthogonal, could even be layered. |
+| **Storage containers — Parquet, HDF5, SQLite archive** | Hold many tables in one file like PACK holds many `&` tables, but they are random-access *storage*. PACK is explicitly **not** storage — it's a derived wire/artifact. |
+
+**The honest summary.** Every individual ingredient — positional rows,
+sigil prefixes, `@`-dictionary interning, delta rows, hash chains,
+self-description — exists somewhere in prior art, and the schema-once
+tabular core in particular is now crowded territory (TOON alone has ~16k
+GitHub stars). What the research found *no precedent for* is the
+**combination**: in-band string interning **plus** multi-table single-stream
+framing **plus** hash-linked master/diff chains tuned to prompt-cache
+economics **plus** a mandatory integrity trailer driving a "cite or refuse"
+policy **plus** a cold-read legend **plus** the prompt-injection armor rule —
+all selected and tuned for one new consumer: a large language model reading
+structured data inside a paid, cache-priced context window. That combination,
+and that target, are the invention. The docs lead with that envelope, not
+with the tabular row layer, precisely because the row layer is well-trodden.
+
+### 10.5 An honest word on the token numbers
+
+The headline "≈ one-fifth the tokens of JSON" (and the −81% / −91% figures in
+§3) are the **author's own measurements** on FACTs payloads, not yet an
+independent benchmark. For calibration: published third-party measurements of
+*schema-once* LLM formats land lower — roughly 28–40% savings vs JSON (TOON
+~40%, JTON ~28.5%, TRON ~31%), and only raw CSV on very flat data approaches
+80%. FactsPack reaches the high end **because three savings stack**: dropping
+JSON's per-row keys/punctuation (the part those formats also do), **interning
+heavy repeated strings** like file paths (most don't), and **shipping deltas
+instead of whole tables** on refresh (none do). The figure is therefore
+believable *for FactsPack's workload* (codebase maps, where paths repeat
+enormously) and weaker on data without repetition. If you adopt the format,
+**measure on your own payloads** rather than assuming 80% — and treat the
+numbers here as workload-specific, not universal. (One open risk worth naming:
+no third party has yet benchmarked LLM *comprehension accuracy* of
+dictionary-interned references — rows pointing at `@` ids across a long pack.
+The v0.2 in-band legend and `; hot:` hints are the mitigation; their
+effectiveness is plausible but unproven.)
+
+### 10.6 Name and extension: what `.pack` collides with
+
+The **name "FactsPack" is clear** as of June 2026 — no package on npm, PyPI,
+or crates.io, and no published format or repo claims it (a handful of small
+projects use `factspack` only as a private internal identifier for "a bundle
+of facts for an LLM," which, if anything, confirms the name is intuitive).
+
+The **`.pack` extension, however, is crowded**, so the spec relies on the
+`#` header line — not the extension — as the real format signal. Things that
+also use `.pack` (all unrelated):
 
 - **Git packfiles** (`.git/objects/pack/*.pack`) — git's internal *binary*
-  object storage. Same extension, zero relation. A FactsPack always begins
-  with a `#` header line and is plain UTF-8 text; a git packfile begins
-  with the binary magic `PACK`.
-- **Game/resource `.pack` archives** (various engines) — also binary
-  bundles, also unrelated.
+  object storage, and by far the dominant association. Zero relation: a
+  FactsPack is UTF-8 text and starts with `#`; a git packfile is binary and
+  starts with the magic bytes `PACK`. A web search for "pack format" returns
+  git's docs first — keep that in mind when naming things publicly.
+- **Total War / Warscape PackFile** — proprietary binary game-asset archives
+  (the top hit in file-extension databases).
+- **Java Pack200** (`.pack`, `.jar.pack.gz`) — a deprecated/removed JAR
+  compressor.
+- **libGDX TexturePacker atlas, ARM CMSIS-Pack, CustoPack theme bundles** —
+  game atlases, embedded-toolchain zip archives, and Windows theme bundles.
+- **Minecraft "pack format"** — terminology only (its packs ship as `.zip`/
+  `.mcpack`); it dominates SEO for the phrase "pack format."
+
+If you ever find the collision painful in tooling (editors or GitHub's
+language detector occasionally guessing `.pack` is binary), a secondary
+extension such as `.fpack` is a reasonable escape hatch — but the `#`-header
+sniff test is the canonical way to identify a FactsPack.
 
 ## 11. FAQ
 
@@ -350,7 +431,12 @@ encoder/decoder (TypeScript, zero runtime dependencies, 143 tests
 including a deterministic fuzz suite).
 
 This repository is the format's open-source home, licensed under the
-**GNU Affero General Public License v3.0** ([`LICENSE`](../LICENSE)).
+**GNU Affero General Public License v3.0** ([`LICENSE`](../LICENSE)). Because
+the author retains full copyright, the format is also offered under
+**commercial dual-licensing** for closed-source or proprietary use; and
+contributions are accepted under a Contributor License Agreement — see
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) and the README's "Licensing &
+Contributions" section.
 
 To cite the format, see [`CITATION.cff`](../CITATION.cff), or:
 

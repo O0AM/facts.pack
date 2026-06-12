@@ -205,3 +205,24 @@ sequenceDiagram
 
 > [!TIP]
 > **Prompt Cache Economy:** By pinning the `master.pack` and only appending small `.pack-diff` payloads, 99% of the codebase map context remains cached. This lowers token costs from $10/M tokens down to $1/M tokens for repetitive turns.
+
+---
+
+## 9. AI Agent Usage Recipes
+
+AI coding agents use `.pack` streams to speed up orientation, resolve calls, and update state efficiently:
+
+### Recipe 1: Entrypoint Discovery (PageRank)
+1. **Action:** Parse the `top` table in `agent.pack`.
+2. **Logic:** Sort files by their `importance` rank (computed PageRank).
+3. **Outcome:** Target the highest-importance files as root entrypoints to understand project architecture immediately without reading hundreds of minor helper files.
+
+### Recipe 2: Call Graph Resolution
+1. **Action:** Trace function execution paths.
+2. **Logic:** Match a symbol's declaration ID in the `declarations` table against the `calls` table (maps `caller_id` $\rightarrow$ `callee_id`).
+3. **Outcome:** Traverse the call graph completely in-context, resolving dependencies without running slow, out-of-context text searches.
+
+### Recipe 3: Dynamic State Patching
+1. **Action:** Maintain codebase state synchronization.
+2. **Logic:** Load the baseline `master.1.pack` once. After making modifications, query the re-indexer tool and parse only the incremental `+` (add) and `x` (delete) lines.
+3. **Outcome:** Keep the agent's internal mental model updated while preserving provider prompt caching for subsequent conversation turns.

@@ -26,8 +26,17 @@ See [`CITATION.cff`](CITATION.cff), or:
 > Mishra, A. (2026). *FactsPack (.pack): a token-efficient, agent-first
 > wire format for structured data.* Standard v0.2.
 
+## Licensing
+
+This repository is licensed under the **GNU Affero General Public License
+v3.0** ([`LICENSE`](LICENSE)). Because Aditya Mishra retains full copyright
+ownership, the format is also available under **commercial dual-licensing**
+for closed-source or proprietary use — see the README's "Licensing &
+Contributions" section.
+
 ## Contributing
 
 Contributions to the specification and reference materials are welcome.
 Any change to the spec is a contract change — see the versioning rules in
-[`FACTSPACK.md`](FACTSPACK.md) §11 before proposing grammar changes.
+[`FACTSPACK.md`](FACTSPACK.md) §11, and read [`CONTRIBUTING.md`](CONTRIBUTING.md)
+(including the Contributor License Agreement) before opening a pull request.

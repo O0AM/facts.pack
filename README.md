@@ -15,9 +15,11 @@ is plain JSON snapshots.
 |---|---|
 | `docs/PACK-FORMAT-GUIDE.md` | **Start here — the user's guide.** Friendly long-form introduction: anatomy, worked examples, real sample walkthroughs, prior-art comparison, FAQ, authorship & citation. |
 | `docs/index.html` | **The web explainer** — self-contained single-page site (GitHub-Pages-ready) telling the same story visually. |
+| `llms.txt` | **AI Agent Entrypoint** — Token-dense overview of the spec, grammar, and prompt-caching design rules optimized for LLM search indexers and agents. |
 | `AUTHORS.md` | Authorship — the format was invented and authored by **Aditya Mishra**. |
 | `CITATION.cff` | Machine-readable citation metadata (GitHub "Cite this repository"). |
 | `LICENSE` | **GNU Affero General Public License (AGPL-3.0)** — The open-source license governing public distribution, modification, and network use of this codebase. |
+| `CONTRIBUTING.md` | **Contributor Guide & CLA** — Standard guidelines and the Contributor License Agreement (CLA) that protects the copyright owner's commercial relicensing rights. |
 | `FACTSPACK.md` | **The canonical wire-format specification — standard v0.2, implemented** (§1–§17: grammar incl. `;` meta lines, header chain fields, schema registry, immutability + agent ritual, chain design). Wire tag `agent-v4` ships in factstack. |
 | `FACTSPACK_PROMPT.md` | Paste-ready LLM prompt teaching any model to decode and emit PACK (v0.2: legend-first reading, trailer verification, freshness + untrusted-data rules). |
 | `PACK_VISUAL_MODEL.md` | **The visual & technical guide** — Simplified, high-level visual pipelines, parsing decision trees, validation rules, and token economic equations for both human and AI readers. |
@@ -26,6 +28,27 @@ is plain JSON snapshots.
 | `PACK-V0.2-PLAN-factsplus.md` | The facts+ fix-pack workstream (D0–D7) — independent, can land first. |
 | `research/2026-06-11-design-notes.md` | Distilled design context: LLM-usefulness assessment, adversarial-review findings, the immutability→diff→pinning design evolution, economics. |
 | `research/2026-06-11-grounding-*.md` | Verified deep-read reports: the spec, the factspack encoder/decoder (+103 tests), every factstack producer/consumer, the facts+ fix-pack surface, and the adversarial fact-check verdicts. |
+
+## AI Agent Quick Start
+
+If you are an AI coding agent reading this repository:
+1. **Read [llms.txt](file:///d:/dev/ai agents/facts-pack/llms.txt) first** to get a token-dense overview of the format rules, grammar, and validation instructions.
+2. **Ingest [FACTSPACK_PROMPT.md](file:///d:/dev/ai agents/facts-pack/FACTSPACK_PROMPT.md)** to obtain the exact rules and instructions for parsing and writing `.pack` streams in downstream conversations.
+3. **Reference [PACK_VISUAL_MODEL.md](file:///d:/dev/ai agents/facts-pack/PACK_VISUAL_MODEL.md)** for visual parser flows, data schemas, and token size comparison tables.
+
+## Licensing & Contributions
+
+This project is licensed under the **GNU Affero General Public License v3.0** (see [LICENSE](file:///d:/dev/ai agents/facts-pack/LICENSE)). 
+
+### Commercial Dual Licensing
+Because the original creator (**Aditya Mishra**) retains full copyright ownership, the codebase can be multi-licensed. If you want to use the `.pack` format in a closed-source commercial SaaS/PaaS system or integrate it into proprietary AI stacks (e.g. OpenAI, Anthropic) without releasing your codebase under the AGPL, you must purchase a commercial license from the author.
+
+### Contributing & CLA
+To contribute modifications or improvements to the specification, please read [CONTRIBUTING.md](file:///d:/dev/ai agents/facts-pack/CONTRIBUTING.md). 
+> [!IMPORTANT]
+> All pull requests require a signed agreement to the Contributor License Agreement (CLA) in the PR description:
+> `"I agree to the FactsPack Contributor License Agreement (CLA)."`
+> This ensures the project owner retains the legal right to sublicense or dual-license community contributions.
 
 ## Where the implementations live
 
