@@ -1,0 +1,140 @@
+# factstack/0.3.10	agent-v3	2026-06-11T19:30:55.600Z	95
+@ L1=svg
+@ L2=other
+@ L3=css
+@ L4=javascript
+@ L5=markdown
+@ L6=html
+@ L7=json
+@ L8=yaml
+@ F1=makercentral_v1/src/routes/index.jsx
+@ T1=makercentral_v1/src/App.jsx
+@ F2=makercentral_v1/src/App.jsx
+@ T2=makercentral_v1/src/assets/img/react.svg
+@ T3=makercentral_v1/src/assets/img/vite.svg
+@ T4=makercentral_v1/src/assets/img/hero.png
+@ T5=makercentral_v1/src/assets/styles/App.css
+@ F3=makercentral_v1/src/main.jsx
+@ T6=makercentral_v1/src/redux/index.js
+@ T7=makercentral_v1/src/routes/index.jsx
+@ T8=makercentral_v1/src/assets/styles/index.css
+@ N1=VITE_FIREBASE_API_KEY
+@ F4=makercentral_v1/src/lib/fb.js
+@ N2=VITE_FIREBASE_APP_ID
+@ N3=VITE_FIREBASE_AUTH_DOMAIN
+@ N4=VITE_FIREBASE_MESSAGING_SENDER_ID
+@ N5=VITE_FIREBASE_PROJECT_ID
+@ N6=VITE_FIREBASE_STORAGE_BUCKET
+@ F5=makercentral_v1/src/redux/index.js
+@ F6=makercentral_v1/animations.md
+@ F7=makercentral_v1/Design.md
+@ F8=makercentral_v1/README.md
+@ F9=makercentral_v1/project_str.md
+@ F10=makercentral_v1/spec.md
+& files	path	L	loc	tok	bytes	gz	status	mtime	churn	read
+- makercentral_v1/public/favicon.svg	L1	1	2721	9522	-	ok	1774117323254	-	1
+- makercentral_v1/public/icons.svg	L1	25	1437	5031	-	ok	1774117323260	-	1
+- makercentral_v1/src/assets/img/hero.png	L2	0	0	44919	-	ok	1774117323242	-	0
+- makercentral_v1/src/assets/img/react.svg	L1	1	1179	4126	-	ok	1771566687356	-	1
+- makercentral_v1/src/assets/img/vite.svg	L1	2	2488	8709	-	ok	1774117323281	-	1
+- makercentral_v1/src/assets/styles/App.css	L3	185	826	2891	941	ok	1774117322949	-	7.5
+- makercentral_v1/src/assets/styles/index.css	L3	114	627	2193	903	ok	1775383214635	-	4.5
+- makercentral_v1/src/lib/fb.js	L4	23	260	911	422	ok	1774122086727	-	1
+- makercentral_v1/src/redux/index.js	L4	23	116	406	236	ok	1774122084718	-	1
+- makercentral_v1/src/routes/index.jsx	L4	14	92	321	228	ok	1774122093481	-	1
+- makercentral_v1/src/App.jsx	L4	125	1081	3785	913	ok	1775383561443	-	5
+- makercentral_v1/src/main.jsx	L4	16	126	440	228	ok	1775383463567	-	1
+- makercentral_v1/tmp_icons/completed.svg	L1	5	73	254	-	ok	1775388586894	-	1
+- makercentral_v1/tmp_icons/in-progress.svg	L1	5	91	317	-	ok	1775388588904	-	1
+- makercentral_v1/tmp_icons/model.svg	L1	9	103	361	-	ok	1775388596949	-	1
+- makercentral_v1/tmp_icons/pending.svg	L1	4	64	225	-	ok	1775388590922	-	1
+- makercentral_v1/tmp_icons/task.svg	L1	6	95	333	-	ok	1775388592932	-	1
+- makercentral_v1/tmp_icons/token.svg	L1	5	79	278	-	ok	1775388594941	-	1
+- makercentral_v1/animations.md	L5	629	7000	24543	-	ok	1775327878461	-	25
+- makercentral_v1/commander v1.2.html	L6	917	13707	47976	10909	ok	1775410440237	-	36.5
+- makercentral_v1/commander_stream.json	L7	275	3004	10522	2890	ok	1775412068574	-	11
+- makercentral_v1/commander-v-1.html	L6	396	4792	16773	4479	ok	1775413213703	-	16
+- makercentral_v1/commander-v1-0.html	L6	487	6195	21686	5733	ok	1775413894988	-	19.5
+- makercentral_v1/commander.html	L6	917	13707	47976	10909	ok	1775410440237	-	36.5
+- makercentral_v1/Design.md	L5	94	1342	4697	-	ok	1775413450391	-	4
+- makercentral_v1/eslint.config.js	L4	30	217	758	384	ok	1771566687178	-	1
+- makercentral_v1/index.html	L6	14	106	372	254	ok	1774117359191	-	1
+- makercentral_v1/package.json	L7	58	417	1459	591	ok	1775383043719	-	2.5
+- makercentral_v1/pnpm-lock.yaml	L8	3755	37030	129605	-	ok	1775383084048	-	150
+- makercentral_v1/project_str.md	L5	38	240	1088	-	ok	1775388734631	-	1.5
+- makercentral_v1/README.md	L5	19	293	1025	-	ok	1774117359213	-	1
+- makercentral_v1/spec.md	L5	0	0	0	-	ok	1775382766594	-	1
+- makercentral_v1/vite.config.js	L4	24	129	451	248	ok	1774122077310	-	1
+& imports	id	F	T	kind	conf
+- 0	F1	T1	import	extracted
+- 1	F2	T2	import	extracted
+- 2	F2	T3	import	extracted
+- 3	F2	T4	import	extracted
+- 4	F2	T5	import	extracted
+- 5	F3	T6	import	extracted
+- 6	F3	T7	import	extracted
+- 7	F3	T8	import	extracted
+& routes	id	framework	method	path	F	sym
+- 0	react-router	GET	/index	F1	default
+& risks	id	sev	cat	rule	F	line	msg	tech
+- 0	low	license	missing-license	-	-	No software license is declared. Without one, contributors and users have no legal right to use, copy, or distribute this code — even if the repo is public.	No project license declared. Add a "license" field to package.json (or a LICENSE file).
+& envs	id	N	F	line	access	default
+- 0	N1	F4	8	import.meta.env	YOUR_API_KEY
+- 1	N2	F4	13	import.meta.env	YOUR_APP_ID
+- 2	N3	F4	9	import.meta.env	YOUR_AUTH_DOMAIN
+- 3	N4	F4	12	import.meta.env	YOUR_MESSAGING_SENDER_ID
+- 4	N5	F4	10	import.meta.env	YOUR_PROJECT_ID
+- 5	N6	F4	11	import.meta.env	YOUR_STORAGE_BUCKET
+& declarations	id	F	name	kind	start	end	exp
+- 0	F4	auth	constant	19	19	1
+- 1	F4	db	constant	20	20	1
+- 2	F4	app	variable	22	22	1
+- 3	F5	store	constant	18	22	1
+- 4	F1	router	constant	4	13	1
+- 5	F2	App	component	8	122	0
+- 6	F2	App	variable	124	124	1
+& symbols	id	F	name	kind	start	end	exp
+& calls	id	S	T	kind	conf
+& nodeMetrics	path	imp	comm
+- makercentral_v1/public/favicon.svg	0.4783	13
+- makercentral_v1/public/icons.svg	0.4783	14
+- makercentral_v1/src/assets/img/hero.png	0.6908	16
+- makercentral_v1/src/assets/img/react.svg	0.6908	16
+- makercentral_v1/src/assets/img/vite.svg	0.6908	16
+- makercentral_v1/src/assets/styles/App.css	0.6908	16
+- makercentral_v1/src/assets/styles/index.css	0.6138	17
+- makercentral_v1/src/lib/fb.js	0.4783	18
+- makercentral_v1/src/redux/index.js	0.6138	17
+- makercentral_v1/src/routes/index.jsx	0.6138	16
+- makercentral_v1/src/App.jsx	1	16
+- makercentral_v1/src/main.jsx	0.4783	17
+- makercentral_v1/tmp_icons/completed.svg	0.4783	19
+- makercentral_v1/tmp_icons/in-progress.svg	0.4783	20
+- makercentral_v1/tmp_icons/model.svg	0.4783	21
+- makercentral_v1/tmp_icons/pending.svg	0.4783	22
+- makercentral_v1/tmp_icons/task.svg	0.4783	23
+- makercentral_v1/tmp_icons/token.svg	0.4783	24
+- makercentral_v1/animations.md	0.4783	2
+- makercentral_v1/commander v1.2.html	0.4783	3
+- makercentral_v1/commander_stream.json	0.4783	7
+- makercentral_v1/commander-v-1.html	0.4783	4
+- makercentral_v1/commander-v1-0.html	0.4783	5
+- makercentral_v1/commander.html	0.4783	6
+- makercentral_v1/Design.md	0.4783	0
+- makercentral_v1/eslint.config.js	0.4783	8
+- makercentral_v1/index.html	0.4783	9
+- makercentral_v1/package.json	0.4783	10
+- makercentral_v1/pnpm-lock.yaml	0.4783	11
+- makercentral_v1/project_str.md	0.4783	12
+- makercentral_v1/README.md	0.4783	1
+- makercentral_v1/spec.md	0.4783	15
+- makercentral_v1/vite.config.js	0.4783	25
+& rationale	id	sym	kind	text	F	line
+- makercentral_v1/animations.md@110#note	-	note	]	F6	110
+& entities	id	kind	name	mod	F	line	detail
+- doc:makercentral_v1/Design.md	doc	Neo Commerce Design System	doc	F7	0	Neo Commerce Design System
+- doc:makercentral_v1/README.md	doc	React + Vite	doc	F8	0	React + Vite
+- doc:makercentral_v1/animations.md	doc	The Ultimate Guide to Web Animations & Spring Physics	doc	F6	0	The Ultimate Guide to Web Animations & Spring Physics
+- doc:makercentral_v1/project_str.md	doc	Project Structure - MakerCentral v1	doc	F9	0	Project Structure - MakerCentral v1
+- doc:makercentral_v1/spec.md	doc	spec	doc	F10	0	spec
+& entityEdges	id	E	T	kind	conf	line

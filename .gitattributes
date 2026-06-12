@@ -1,0 +1,8 @@
+# FactsPack artifacts are byte-sensitive: real tabs as field separators,
+# LF (0x0A) as the record separator per FACTSPACK.md §4. Never let git
+# convert their line endings.
+*.pack text eol=lf
+*.pack-diff text eol=lf
+
+# Everything else: normalize to LF in the repository.
+* text=auto
