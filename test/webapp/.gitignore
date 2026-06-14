@@ -1,0 +1,6 @@
+# Python bytecode cache from the Playwright suites
+__pycache__/
+*.pyc
+
+# Local proof/screenshot artifacts
+_proof_*.png

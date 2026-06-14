@@ -161,7 +161,10 @@ for (const c of CASES) {
     check('producer', h.producer === 'factspack-web/0.1', h.producer);
     check('schema', h.schema === (mode === 'map' ? 'map-v1' : 'paste-v1'), h.schema);
     check('kind', h.kind === 'master', String(h.kind));
-    check('seq', h.seq === 1, String(h.seq));
+    // A standalone converter master is not part of a diff chain, so it carries
+    // no seq (the unified codec omits absent header fields rather than emitting a
+    // misleading seq=1). kind=master is still asserted above.
+    check('seq absent (standalone master)', h.seq === undefined, String(h.seq));
     const totalRows = [...decoded.tables.values()].reduce((n, t) => n + t.rows.length, 0);
     check('header rowCount', h.rowCount === totalRows, `${h.rowCount} vs ${totalRows}`);
 

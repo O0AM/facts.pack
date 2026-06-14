@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FactsPack Evolution Dossier · Baseline vs. Expectation vs. Reality</title>
+<meta name="description" content="A comprehensive 3-column visual comparison of FactsPack v0.2, the expected v0.3 draft, and the reconciled, hardened outcome.">
+<style>
+  /* ============================================================
+     FactsPack · Evolution Grid Stylesheet
+     All CSS fully inline. Pure system fonts. OKLCH palette.
+     ============================================================ */
+
+  :root {
+    color-scheme: light;
+    --paper: oklch(98.5% 0.005 85);
+    --paper-card: oklch(100% 0 0);
+    --paper-sunk: oklch(94.5% 0.008 85);
+    
+    --ink: oklch(20% 0.015 260);
+    --ink-muted: oklch(42% 0.015 260);
+    --ink-faint: oklch(62% 0.01 260);
+    --rule: oklch(88% 0.008 85);
+    
+    /* Column branding accents */
+    --c-before: oklch(50% 0.015 260);        /* Slate / Gray */
+    --c-expected: oklch(65% 0.16 65);       /* Warm Ochre / Amber */
+    --c-outcome: oklch(48% 0.14 150);       /* Emerald / Mint */
+    
+    --c-before-bg: oklch(96% 0.005 260);
+    --c-expected-bg: oklch(97% 0.02 65);
+    --c-outcome-bg: oklch(96% 0.015 150);
+
+    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 12px 32px oklch(20% 0.015 260 / 0.06);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 20px 48px oklch(20% 0.015 260 / 0.12);
+    
+    --serif: "Sitka Heading", "Hoefler Text", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: "Sitka Text", "Charter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --paper: oklch(15% 0.012 260);
+    --paper-card: oklch(19% 0.015 260);
+    --paper-sunk: oklch(12% 0.01 260);
+    
+    --ink: oklch(92% 0.01 80);
+    --ink-muted: oklch(76% 0.01 80);
+    --ink-faint: oklch(56% 0.012 260);
+    --rule: oklch(28% 0.015 260);
+    
+    --c-before: oklch(72% 0.012 260);
+    --c-expected: oklch(78% 0.12 70);
+    --c-outcome: oklch(74% 0.12 150);
+    
+    --c-before-bg: oklch(22% 0.01 260);
+    --c-expected-bg: oklch(23% 0.02 70);
+    --c-outcome-bg: oklch(22% 0.02 150);
+    
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 16px 36px oklch(5% 0.02 260 / 0.4);
+    --shadow-hover: 0 4px 10px rgba(0,0,0,0.4), 0 24px 48px oklch(5% 0.02 260 / 0.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Header & Wordmark ---- */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 2rem;
+    background: var(--paper-card);
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .wordmark {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .wordmark span { color: var(--c-outcome); }
+  .theme-btn {
+    background: var(--paper-sunk);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .theme-btn:hover {
+    border-color: var(--c-outcome);
+  }
+
+  .hero {
+    text-align: center;
+    padding: 3.5rem 2rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    line-height: 1.1;
+    margin: 0 0 1rem;
+    font-weight: 600;
+  }
+  .hero p {
+    font-size: 1.15rem;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+
+  /* ============================================================
+     CSS Grid Layout (3 Column comparison)
+     ============================================================ */
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    max-width: 1350px;
+    margin: 0 auto;
+    padding: 1rem 2rem 4rem;
+    align-items: start;
+  }
+  
+  @media (max-width: 1024px) {
+    .grid-container {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+  }
+
+  .col-card {
+    background: var(--paper-card);
+    border-radius: 14px;
+    border: 1px solid var(--rule);
+    box-shadow: var(--shadow);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    overflow: hidden;
+  }
+  .col-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  /* Column Headers */
+  .col-header {
+    padding: 1.6rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .col-header .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    font-weight: 700;
+    display: inline-block;
+    margin-bottom: 0.6rem;
+  }
+  .col-header h2 {
+    font-family: var(--serif);
+    font-size: 1.55rem;
+    margin: 0 0 0.4rem;
+    font-weight: 600;
+  }
+  .col-header .desc {
+    font-size: 0.88rem;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+
+  /* Cards branding colors */
+  .col-before .tag { background: var(--c-before-bg); color: var(--c-before); }
+  .col-before .col-header { border-top: 4px solid var(--c-before); }
+
+  .col-expected .tag { background: var(--c-expected-bg); color: var(--c-expected); }
+  .col-expected .col-header { border-top: 4px solid var(--c-expected); }
+
+  .col-outcome .tag { background: var(--c-outcome-bg); color: var(--c-outcome); }
+  .col-outcome .col-header { border-top: 4px solid var(--c-outcome); }
+
+  /* Body Content */
+  .col-content {
+    padding: 1.6rem;
+  }
+  .col-content h3 {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    margin: 1.5rem 0 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.3rem;
+  }
+  .col-content h3:first-of-type {
+    margin-top: 0;
+  }
+
+  /* Lists */
+  ul {
+    padding-left: 1.2rem;
+    margin: 0 0 1.5rem;
+  }
+  li {
+    font-size: 0.92rem;
+    margin-bottom: 0.6rem;
+    color: var(--ink-muted);
+  }
+  li strong {
+    color: var(--ink);
+  }
+  li code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--paper-sunk);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+
+  /* Diagram Embed Containers */
+  .diagram-box {
+    background: var(--paper-sunk);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1.2rem 0;
+    border: 1px solid var(--rule);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .diagram-box svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* SVG Typography & Styling */
+  .svg-text {
+    font-family: var(--sans);
+    font-size: 11px;
+    fill: var(--ink);
+    text-anchor: middle;
+  }
+  .svg-text-bold {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: bold;
+    fill: var(--ink);
+    text-anchor: middle;
+  }
+  .svg-text-mono {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--ink-muted);
+    text-anchor: middle;
+  }
+  .svg-arrow {
+    stroke: var(--ink-faint);
+    stroke-width: 1.5;
+    fill: none;
+    marker-end: url(#arrowhead);
+  }
+  .svg-arrow-danger {
+    stroke: oklch(55% 0.18 25);
+    stroke-width: 1.5;
+    fill: none;
+    marker-end: url(#arrowhead-danger);
+  }
+  .svg-arrow-success {
+    stroke: var(--c-outcome);
+    stroke-width: 1.5;
+    fill: none;
+    marker-end: url(#arrowhead-success);
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 2.5rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="wordmark"><span>#</span> FactsPack · Evolution Dossier</div>
+  <button class="theme-btn" id="theme-btn" type="button">
+    ☀️ <span id="theme-btn-lbl">Dark Mode</span>
+  </button>
+</div>
+
+<main>
+  <header class="hero">
+    <h1>The FactsPack Evolution</h1>
+    <p>A side-by-side architectural analysis comparing the v0.2 foundation, the expected v0.3 proposals, and the final hardened tri-agent outcome.</p>
+  </header>
+
+  <!-- ============================================================
+       3 COLUMN CSS GRID CONTAINER
+       ============================================================ -->
+  <div class="grid-container">
+
+    <!-- ==================== COLUMN 1: BEFORE (v0.2) ==================== -->
+    <div class="col-card col-before">
+      <div class="col-header">
+        <span class="tag">Before · v0.2</span>
+        <h2>Baseline Foundation</h2>
+        <p class="desc">The initial release format focused on token compression, but was exposed to critical contract defects and attention lookup penalties.</p>
+      </div>
+      <div class="col-content">
+        <h3>Core Architecture</h3>
+        <ul>
+          <li><strong>Positional Rows (<code>-</code>):</strong> Tab-separated cells, eliminating JSON key replication.</li>
+          <li><strong>Dictionary Interning (<code>@</code>):</strong> Heavy strings like file paths are mapped once at the top of the pack.</li>
+          <li><strong>Unsecured Integrity Trailer:</strong> Optional SHA-256 validation; only triggers if the trailer line is parsed.</li>
+        </ul>
+
+        <h3>Defects & Vulnerabilities</h3>
+        <ul>
+          <li><strong>The Tab-Space Gap:</strong> Worked examples in the spec used alignment spaces instead of tabs. The parser split strictly on tabs, breaking copies of the example.</li>
+          <li><strong>Diff Count Contradiction:</strong> Diffs set rowCount header to <code>0</code>, but trailer demanded matching decoded edit lines (e.g. <code>2</code>), causing strict decoder crashes.</li>
+          <li><strong>Bypassable Trailer:</strong> A truncated pack with no trailer was silently accepted as a legacy v0.1 file instead of being rejected.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <!-- DIAGRAM 1: Truncation vulnerability -->
+          <svg width="280" height="150" viewBox="0 0 280 150">
+            <defs>
+              <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="oklch(56% 0.012 260)" />
+              </marker>
+              <marker id="arrowhead-danger" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="oklch(55% 0.18 25)" />
+              </marker>
+            </defs>
+            <!-- Stream Box -->
+            <rect x="10" y="10" width="260" height="50" rx="6" fill="var(--paper-card)" stroke="var(--rule)" stroke-width="1.5" />
+            <text x="140" y="30" class="svg-text-bold">Truncated .pack Stream</text>
+            <text x="140" y="48" class="svg-text-mono"># facts/0.2 ... [Stream Cuts Off Here]</text>
+            
+            <!-- Decoder Box -->
+            <rect x="50" y="95" width="180" height="40" rx="6" fill="var(--paper-card)" stroke="oklch(55% 0.18 25)" stroke-width="1.5" />
+            <text x="140" y="114" class="svg-text-bold" style="fill: oklch(55% 0.18 25);">Baseline v0.2 Parser</text>
+            <text x="140" y="127" class="svg-text-mono">"No trailer found? Assume v0.1."</text>
+
+            <path class="svg-arrow-danger" d="M 140,60 L 140,90" />
+          </svg>
+        </div>
+        <caption><b>Vulnerability Dataflow:</b> A truncated pack stream loses the trailer entirely. The v0.2 parser skips the check and falsely returns success.</caption>
+
+        <h3>Cognitive Attention Drag</h3>
+        <ul>
+          <li><strong>Long-Range Indirection:</strong> High interning tables put dictionary keys far away from referrers, degrading LLM attention lookup accuracy.</li>
+          <li><strong>Delta Churn:</strong> Symbol IDs mapped by coordinate line numbers (<code>path#name@line</code>) churn on simple top-of-file edits, bloating diff commits.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ==================== COLUMN 2: EXPECTED (v0.3 Draft) ==================== -->
+    <div class="col-card col-expected">
+      <div class="col-header">
+        <span class="tag">Expected · v0.3 Draft</span>
+        <h2>Optimistic Proposals</h2>
+        <p class="desc">The consensus draft added features rapidly to solve RAG traversal issues, but introduced unmeasured estimates and type risks.</p>
+      </div>
+      <div class="col-content">
+        <h3>Proposed Features</h3>
+        <ul>
+          <li><strong>Graph Schema Grounding:</strong> Emitting a machine-readable graph structure (<code>; gschema</code>) to anchor text-to-cypher queries.</li>
+          <li><strong>Logical Types:</strong> Machine-readable column annotations to clarify data cells for agents.</li>
+          <li><strong>Adjacency Sorting:</strong> Sorting edge listings by node source and PageRank to help attention-heads traverse connections.</li>
+        </ul>
+
+        <h3>Vulnerabilities & Over-Reaches</h3>
+        <ul>
+          <li><strong>Fabricated Calculator:</strong> Promoted unmeasured projections (e.g. "+15% for incident ordering", "+12% for communities") as precise engineering facts on the UI.</li>
+          <li><strong>Lite Monikers Mutation Risk:</strong> Proposed using oxc/tree-sitter Lite monikers as mutation keys in delta chains, risking corrupting symbols due to collision errors.</li>
+          <li><strong>XML Shielding Illusion:</strong> Stated XML tag wrappers made LLM inputs "Bulletproof", ignoring that cells can contain closing tags.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <!-- DIAGRAM 2: Moniker Mutation Collision Risk -->
+          <svg width="280" height="150" viewBox="0 0 280 150">
+            <!-- Source code change -->
+            <rect x="10" y="10" width="115" height="42" rx="4" fill="var(--paper-card)" stroke="var(--rule)" />
+            <text x="67" y="26" class="svg-text-bold">Lite Parser</text>
+            <text x="67" y="38" class="svg-text-mono">oxc heuristic</text>
+
+            <!-- Collision -->
+            <circle cx="210" cy="31" r="18" fill="var(--paper-card)" stroke="oklch(65% 0.16 65)" stroke-width="2" />
+            <text x="210" y="35" class="svg-text-bold" style="fill: oklch(65% 0.16 65);">ID</text>
+
+            <!-- Mutation -->
+            <rect x="50" y="95" width="180" height="42" rx="4" fill="var(--paper-card)" stroke="oklch(55% 0.18 25)" stroke-width="1.5" />
+            <text x="140" y="112" class="svg-text-bold" style="fill: oklch(55% 0.18 25);">Destructive Mutation</text>
+            <text x="140" y="125" class="svg-text-mono">Wrong code block modified!</text>
+
+            <path class="svg-arrow" d="M 125,31 L 187,31" />
+            <path class="svg-arrow-danger" d="M 210,50 L 175,90" />
+          </svg>
+        </div>
+        <caption><b>Collision Dataflow:</b> Heuristic Lite monikers omit scopes and signatures. When a duplicate name collides, a destructive edit mutates the wrong symbol.</caption>
+
+        <h3>Integration Gaps</h3>
+        <ul>
+          <li><strong>Process AGPL Bypass:</strong> Claimed process boundary wrapping escaped the copyleft rules of the AGPL-3.0, representing a legal conclusion as engineering fact.</li>
+          <li><strong>Unpinned Determinism:</strong> Left float precision and platform path variations (Windows vs POSIX) unpinned.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ==================== COLUMN 3: OUTCOME (Hardened) ==================== -->
+    <div class="col-card col-outcome">
+      <div class="col-header">
+        <span class="tag">Outcome · Reconciled</span>
+        <h2>Hardened Reality</h2>
+        <p class="desc">A strictly gated roadmap. Foundation defects are fixed first, and feature additions must prove their token and accuracy savings under P0.1.</p>
+      </div>
+      <div class="col-content">
+        <h3>Gate 0: Core Repair</h3>
+        <ul>
+          <li><strong>Tab-Exact Fixtures:</strong> Re-generated spec examples from actual tab-separated bytes.</li>
+          <li><strong>Disentangled Counts:</strong> Differential patches carry a Monotonic <code>0</code> header sentinel; trailer counts physical changes.</li>
+          <li><strong>Strict Profiles:</strong> The decoder checks for header settings and throws on truncated packs omitting trailers.</li>
+        </ul>
+
+        <h3>Gate 1: determinism & Limits</h3>
+        <ul>
+          <li><strong>Strict Path Normalization:</strong> Replaces Windows <code>\</code> with POSIX <code>/</code> before dict allocation to guarantee reproducible hashes.</li>
+          <li><strong>Ceilings & Memory boundaries:</strong> Decoder limits dictionary entries and table lengths to block denial-of-service payloads.</li>
+          <li><strong>Deep Round-Trip Oracle:</strong> Replaced the lossy oracle with a byte-deep validation suite.</li>
+        </ul>
+
+        <div class="diagram-box">
+          <!-- DIAGRAM 3: Hardened Pipeline Flow -->
+          <svg width="280" height="150" viewBox="0 0 280 150">
+            <defs>
+              <marker id="arrowhead-success" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <polygon points="0 0, 6 3, 0 6" fill="var(--c-outcome)" />
+              </marker>
+            </defs>
+            <!-- Input Node -->
+            <rect x="5" y="10" width="80" height="35" rx="4" fill="var(--paper-card)" stroke="var(--rule)" />
+            <text x="45" y="26" class="svg-text">Win32 path</text>
+            <text x="45" y="38" class="svg-text-mono">src\auth.ts</text>
+
+            <!-- Normalizer -->
+            <rect x="100" y="10" width="80" height="35" rx="4" fill="var(--paper-card)" stroke="var(--rule)" />
+            <text x="140" y="26" class="svg-text">POSIX swap</text>
+            <text x="140" y="38" class="svg-text-mono">src/auth.ts</text>
+
+            <!-- Sorted intern -->
+            <rect x="195" y="10" width="80" height="35" rx="4" fill="var(--paper-card)" stroke="var(--rule)" />
+            <text x="235" y="26" class="svg-text">Sorted walk</text>
+            <text x="235" y="38" class="svg-text-mono">alpha order</text>
+
+            <!-- Hardened verify -->
+            <rect x="50" y="90" width="180" height="45" rx="6" fill="var(--paper-card)" stroke="var(--c-outcome)" stroke-width="1.5" />
+            <text x="140" y="108" class="svg-text-bold" style="fill: var(--c-outcome)">Hardened Decoder</text>
+            <text x="140" y="123" class="svg-text-mono">Checked limits & validated trailer</text>
+
+            <path class="svg-arrow-success" d="M 85,27 L 95,27" />
+            <path class="svg-arrow-success" d="M 180,27 L 190,27" />
+            <path class="svg-arrow-success" d="M 235,45 L 200,85" />
+          </svg>
+        </div>
+        <caption><b>Determinism Pipeline:</b> Path inputs are normalized and alphabetized. The stream is evaluated by a bounded parser checking limits and trailers.</caption>
+
+        <h3>Reworked Strategic Features</h3>
+        <ul>
+          <li><strong>P0.1 Code Benchmark:</strong> Validates real-world token/accuracy savings privately before publishing claims (complying with R5).</li>
+          <li><strong>Lite Monikers as Navigation Hints:</strong> marking heuristic tokens as non-authoritative. Destructive deletes/replaces require SCIP identifiers (Gate 4).</li>
+          <li><strong>GSchema & Types Scoped:</strong> <code>; types</code> line limited to storage specials. Graph summaries are kept off the hashed wire to preserve determinism.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <span>FactsPack Evolution Dossier · 2026-06-14</span><br>
+  <span style="margin-top: 0.4rem; display: inline-block;">Status: Staged research verdict · AGPL-3.0</span>
+</footer>
+
+<script>
+  (function() {
+    const root = document.documentElement;
+    const btn = document.getElementById('theme-btn');
+    const label = document.getElementById('theme-btn-lbl');
+
+    function sync() {
+      const dark = root.getAttribute('data-theme') === 'dark';
+      label.textContent = dark ? 'Light Mode' : 'Dark Mode';
+      btn.innerHTML = (dark ? '☀️ ' : '🌙 ') + '<span id="theme-btn-lbl">' + (dark ? 'Light Mode' : 'Dark Mode') + '</span>';
+    }
+    
+    // Init theme
+    try {
+      let t = localStorage.getItem('fp-theme');
+      if (!t) {
+        t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      root.setAttribute('data-theme', t);
+      sync();
+    } catch(e) {}
+
+    btn.addEventListener('click', function() {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('fp-theme', next); } catch(e) {}
+      sync();
+    });
+  })();
+</script>
+</body>
+</html>

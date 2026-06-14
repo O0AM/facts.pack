@@ -5,7 +5,7 @@ FactsPack (v0.2) is a line-oriented, tab-separated UTF-8 text format designed to
 ## Reference Files
 - [Specification](FACTSPACK.md) — Normative grammar, line types, schema versioning, and trust rules.
 - [AI Preamble Prompt](FACTSPACK_PROMPT.md) — Paste-ready system instructions to teach agents to read/write .pack.
-- [Visual & Architecture Diagrams](PACK_VISUAL_MODEL.md) — Flowcharts of the parser, interning, and token economics.
+- [Visual & Architecture Diagrams](planning/PACK_VISUAL_MODEL.md) — Flowcharts of the parser, interning, and token economics.
 - [User Guide](docs/PACK-FORMAT-GUIDE.md) — Worked examples, FAQ, and detailed comparisons against JSON/TSV.
 
 ## Grammar At A Glance

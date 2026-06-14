@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FactsPack v0.3 — Next Steps &amp; Roadmap</title>
+<meta name="description" content="A detailed visual roadmap and interactive impact calculator showing the transition of FactsPack (.pack) from v0.2 to v0.3/agent-v5. By Aditya Mishra.">
+<script>
+  (function(){
+    var t = localStorage.getItem('fp-theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  })();
+</script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #15161e;
+    --bg2: #1a1b26;
+    --panel: #1f2335;
+    --panel2: #24283b;
+    --line: #2f344d;
+    --fg: #c0caf5;
+    --fg-dim: #8a91b4;
+    --fg-faint: #565f89;
+    
+    /* Tokyo Night Accents */
+    --accent: #e0af68;       /* Gold */
+    --accent2: #ff9e64;      /* Orange */
+    --on-accent: #1a1b26;
+    
+    /* Milestone Accents */
+    --accent-rose: #f7768e;   /* P0 */
+    --accent-blue: #7aa2f7;   /* W1 */
+    --accent-purple: #bb9af7; /* W2 */
+    --accent-green: #9ece6a;  /* W3 */
+    
+    --display: 'Sora', 'Segoe UI', system-ui, sans-serif;
+    --sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+    
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.3);
+    --glow-accent: 0 0 20px rgba(224, 175, 104, 0.15);
+    --glow-accent2: 0 0 20px rgba(255, 158, 100, 0.15);
+  }
+
+  [data-theme="light"] {
+    color-scheme: light;
+    --bg: #f8f9fa;
+    --bg2: #ffffff;
+    --panel: #e9ecef;
+    --panel2: #dee2e6;
+    --line: #ced4da;
+    --fg: #212529;
+    --fg-dim: #495057;
+    --fg-faint: #8d949c;
+    
+    --accent: #b45309;       /* Deep Gold / Amber */
+    --accent2: #c2410c;      /* Deep Orange */
+    --on-accent: #ffffff;
+    
+    /* Milestone Accents - Light Mode version for contrast */
+    --accent-rose: #be123c;   /* Red */
+    --accent-blue: #1d4ed8;   /* Blue */
+    --accent-purple: #6d28d9; /* Purple */
+    --accent-green: #166534;  /* Green */
+    
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+    --glow-accent: 0 0 20px rgba(180, 83, 9, 0.05);
+    --glow-accent2: 0 0 20px rgba(194, 65, 12, 0.05);
+  }
+
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; 
+  }
+  
+  body { 
+    background: var(--bg); 
+    color: var(--fg); 
+    font-family: var(--sans); 
+    line-height: 1.6; 
+    font-size: 16px; 
+    padding-bottom: 120px; 
+  }
+  
+  .wrap { 
+    max-width: 1040px; 
+    margin: 0 auto; 
+    padding: 0 24px; 
+  }
+  
+  a { 
+    color: var(--accent-blue); 
+    text-decoration: none; 
+    font-weight: 600; 
+  }
+  
+  a:hover { 
+    text-decoration: underline; 
+  }
+  
+  code, pre { 
+    font-family: var(--mono); 
+  }
+  
+  code { 
+    background: var(--panel); 
+    border: 1px solid var(--line); 
+    border-radius: 5px; 
+    padding: 0.15em 0.35em; 
+    font-size: 0.88em; 
+    color: var(--accent2); 
+  }
+  
+  pre { 
+    background: var(--bg2); 
+    border: 1px solid var(--line); 
+    border-radius: 12px; 
+    padding: 18px 22px; 
+    overflow-x: auto; 
+    font-size: 0.82rem; 
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Theme Toggle */
+  #theme-toggle {
+    position: fixed; 
+    top: 20px; 
+    right: 20px; 
+    z-index: 1000;
+    background: rgba(31, 35, 53, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line); 
+    color: var(--fg);
+    padding: 10px 18px; 
+    border-radius: 999px; 
+    cursor: pointer; 
+    font-size: 0.85rem; 
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #theme-toggle:hover { 
+    background: var(--panel2); 
+    transform: translateY(-1px);
+  }
+
+  /* Header */
+  header { 
+    padding: 70px 0 50px; 
+    border-bottom: 1px solid var(--line);
+    background: radial-gradient(1000px 450px at 75% -10%, rgba(224, 175, 104, 0.08), transparent 60%),
+                radial-gradient(800px 350px at 15% -5%, rgba(122, 162, 247, 0.05), transparent 50%);
+    position: relative;
+  }
+  
+  .back-link { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    margin-bottom: 24px; 
+    font-size: 0.9rem;
+    font-weight: 600; 
+    color: var(--fg-dim); 
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+  .back-link:hover {
+    color: var(--accent);
+    text-decoration: none;
+    transform: translateX(-4px);
+  }
+  
+  .ext { 
+    font-family: var(--mono); 
+    font-size: 0.75rem; 
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent); 
+    border: 1px solid rgba(224, 175, 104, 0.3);
+    border-radius: 999px; 
+    padding: 4px 14px; 
+    display: inline-block; 
+    margin-bottom: 20px; 
+    background: rgba(224, 175, 104, 0.05); 
+  }
+  
+  h1 { 
+    font-family: var(--display);
+    font-size: 2.8rem; 
+    font-weight: 800; 
+    letter-spacing: -0.02em; 
+    color: var(--fg); 
+    line-height: 1.15; 
+  }
+  h1 em { 
+    font-style: normal; 
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 800;
+  }
+  
+  .tagline { 
+    margin-top: 18px; 
+    font-size: 1.15rem; 
+    color: var(--fg-dim); 
+    max-width: 44rem; 
+    line-height: 1.5;
+  }
+
+  /* Sections */
+  section { 
+    padding: 70px 0; 
+    border-bottom: 1px solid var(--line); 
+  }
+  
+  h2 { 
+    font-family: var(--display);
+    font-size: 2rem; 
+    font-weight: 750; 
+    color: var(--fg); 
+    margin-bottom: 12px; 
+    letter-spacing: -0.01em;
+  }
+  
+  .lead { 
+    font-size: 1.1rem; 
+    color: var(--fg-dim); 
+    margin-bottom: 40px; 
+    max-width: 44rem; 
+  }
+
+  /* Format Quadrant Chart */
+  .quad-container { 
+    display: grid; 
+    grid-template-columns: 1.25fr 1fr; 
+    gap: 36px; 
+    margin: 40px 0 20px; 
+    align-items: stretch; 
+  }
+  @media(max-width: 900px){ 
+    .quad-container { grid-template-columns: 1fr; } 
+  }
+  
+  .quad-chart { 
+    background: var(--bg2); 
+    border: 1px solid var(--line); 
+    border-radius: 20px; 
+    padding: 30px 40px 40px 56px; 
+    position: relative; 
+    aspect-ratio: 1.25; 
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: var(--shadow-md);
+    overflow: visible;
+  }
+  @media(max-width: 500px){
+    .quad-chart { aspect-ratio: 1; padding: 20px 20px 30px 46px; }
+  }
+
+  .chart-area { 
+    flex: 1; 
+    border-left: 2px solid var(--fg-faint); 
+    border-bottom: 2px solid var(--fg-faint); 
+    position: relative; 
+    background-image: 
+      linear-gradient(rgba(86, 95, 137, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(86, 95, 137, 0.08) 1px, transparent 1px);
+    background-size: 25% 25%;
+  }
+  
+  .chart-label-y { 
+    position: absolute; 
+    left: -48px; 
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 0.72rem; 
+    color: var(--fg-faint); 
+    text-transform: uppercase; 
+    font-weight: 700; 
+    letter-spacing: 0.08em; 
+    white-space: nowrap;
+  }
+  
+  .chart-label-x { 
+    text-align: center; 
+    font-size: 0.72rem; 
+    color: var(--fg-faint); 
+    text-transform: uppercase; 
+    font-weight: 700; 
+    letter-spacing: 0.08em; 
+    margin-top: 14px; 
+  }
+  
+  .plot-point { 
+    position: absolute; 
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer;
+    z-index: 10;
+  }
+  
+  .plot-dot-container {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .plot-dot { 
+    width: 12px; 
+    height: 12px; 
+    border-radius: 50%; 
+    background: var(--accent-blue); 
+    box-shadow: 0 0 10px var(--accent-blue); 
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  .plot-ring {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-blue);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .plot-point:hover .plot-dot {
+    transform: scale(1.35);
+  }
+  .plot-point:hover .plot-ring {
+    opacity: 0.6;
+    transform: scale(1.25);
+  }
+
+  .plot-point.target .plot-dot { 
+    background: var(--accent2); 
+    box-shadow: 0 0 15px var(--accent2); 
+  }
+  .plot-point.target .plot-ring { 
+    border-color: var(--accent2);
+    animation: pulse-ring 2.5s infinite;
+    opacity: 0.5;
+  }
+  
+  @keyframes pulse-ring {
+    0% { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+
+  .plot-label { 
+    position: absolute;
+    font-size: 0.7rem; 
+    font-family: var(--mono);
+    font-weight: 700; 
+    white-space: nowrap; 
+    color: var(--fg-dim); 
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 2px 8px;
+    border-radius: 6px;
+    box-shadow: var(--shadow-sm);
+  }
+  .label-bottom { top: 28px; left: 50%; transform: translateX(-50%); }
+  .label-top { bottom: 28px; left: 50%; transform: translateX(-50%); }
+  .label-left { right: 28px; top: 50%; transform: translateY(-50%); }
+  .label-right { left: 28px; top: 50%; transform: translateY(-50%); }
+  
+  .plot-point.target .plot-label {
+    color: var(--accent2);
+    border-color: rgba(255, 158, 100, 0.4);
+    background: rgba(255, 158, 100, 0.05);
+  }
+
+  /* Chart Tooltips */
+  .plot-tooltip {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    width: 230px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    z-index: 100;
+  }
+  
+  .plot-point:hover .plot-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  
+  .plot-tooltip strong {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: var(--fg);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 6px;
+  }
+  
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--fg-dim);
+    margin-bottom: 4px;
+  }
+  .tooltip-row strong {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    font-size: 0.78rem;
+  }
+  .tooltip-row.target-hl strong {
+    color: var(--accent2);
+  }
+  
+  .tooltip-desc {
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    margin-top: 10px;
+    line-height: 1.45;
+  }
+
+  /* Handle alignment of left/right tooltips to prevent clipping */
+  .plot-point.align-left-tooltip .plot-tooltip {
+    left: auto;
+    right: -20px;
+    transform: translateX(0) translateY(10px);
+  }
+  .plot-point.align-left-tooltip:hover .plot-tooltip {
+    transform: translateX(0) translateY(0);
+  }
+
+  /* Quadrant Side Notes */
+  .quad-notes { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+    justify-content: center;
+  }
+  
+  .quad-notes .card {
+    margin: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-left: 4px solid var(--accent-blue);
+  }
+  .quad-notes .card.accent-w2 {
+    border-left-color: var(--accent-purple);
+  }
+  
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent);
+  }
+  .card h4 {
+    font-family: var(--display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--fg);
+  }
+  .card p {
+    font-size: 0.92rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+
+  /* Timeline */
+  .timeline { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 32px; 
+    position: relative; 
+    margin: 40px 0; 
+  }
+  .timeline::before { 
+    content: ''; 
+    position: absolute; 
+    left: 27px; 
+    top: 15px; 
+    bottom: 15px; 
+    width: 2px; 
+    background: linear-gradient(to bottom, var(--accent-rose), var(--accent-blue), var(--accent-purple), var(--accent-green));
+    opacity: 0.4;
+  }
+  
+  .time-step { 
+    display: flex; 
+    gap: 28px; 
+    position: relative; 
+  }
+  
+  .time-dot { 
+    width: 56px; 
+    height: 56px; 
+    border-radius: 50%; 
+    background: var(--bg2); 
+    border: 2px solid var(--line);
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-family: var(--mono); 
+    font-weight: 700; 
+    font-size: 1.1rem; 
+    color: var(--fg-faint);
+    z-index: 2; 
+    flex-shrink: 0; 
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+  }
+  
+  .time-content { 
+    background: var(--bg2); 
+    border: 1px solid var(--line); 
+    border-radius: 16px; 
+    padding: 24px; 
+    flex-grow: 1; 
+    box-shadow: var(--shadow-sm); 
+    transition: all 0.3s ease;
+  }
+  .time-content:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Timeline Milestones Accents */
+  .time-step.p0 .time-dot { color: var(--accent-rose); border-color: var(--accent-rose); box-shadow: 0 0 15px rgba(247, 118, 142, 0.15); }
+  .time-step.p0 .time-content { border-left: 4px solid var(--accent-rose); }
+  .time-step.p0 .time-content:hover { border-color: var(--accent-rose); box-shadow: 0 4px 20px rgba(247, 118, 142, 0.08); }
+
+  .time-step.w1 .time-dot { color: var(--accent-blue); border-color: var(--accent-blue); box-shadow: 0 0 15px rgba(122, 162, 247, 0.15); }
+  .time-step.w1 .time-content { border-left: 4px solid var(--accent-blue); }
+  .time-step.w1 .time-content:hover { border-color: var(--accent-blue); box-shadow: 0 4px 20px rgba(122, 162, 247, 0.08); }
+
+  .time-step.w2 .time-dot { color: var(--accent-purple); border-color: var(--accent-purple); box-shadow: 0 0 15px rgba(187, 154, 247, 0.15); }
+  .time-step.w2 .time-content { border-left: 4px solid var(--accent-purple); }
+  .time-step.w2 .time-content:hover { border-color: var(--accent-purple); box-shadow: 0 4px 20px rgba(187, 154, 247, 0.08); }
+
+  .time-step.w3 .time-dot { color: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 15px rgba(158, 206, 106, 0.15); }
+  .time-step.w3 .time-content { border-left: 4px solid var(--accent-green); }
+  .time-step.w3 .time-content:hover { border-color: var(--accent-green); box-shadow: 0 4px 20px rgba(158, 206, 106, 0.08); }
+
+  .time-content h3 { 
+    font-family: var(--display);
+    font-size: 1.25rem; 
+    color: var(--fg); 
+    margin-bottom: 8px; 
+    font-weight: 700;
+  }
+  .time-desc {
+    font-size: 0.95rem;
+    color: var(--fg-dim);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .time-desc strong {
+    color: var(--fg);
+  }
+  .time-impact {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .time-impact::before {
+    content: '⚡';
+  }
+  .time-impact.rose { color: var(--accent-rose); }
+  .time-impact.blue { color: var(--accent-blue); }
+  .time-impact.purple { color: var(--accent-purple); }
+  .time-impact.green { color: var(--accent-green); }
+
+  /* Interactive Calculator Panel */
+  .calc-panel { 
+    background: transparent; 
+    border: none;
+    border-radius: 0; 
+    padding: 0; 
+    margin: 40px 0; 
+  }
+  
+  .calc-grid { 
+    display: grid; 
+    grid-template-columns: 1.15fr 1fr; 
+    gap: 36px; 
+  }
+  @media(max-width: 900px){ 
+    .calc-grid { grid-template-columns: 1fr; gap: 30px; } 
+  }
+  
+  /* Calculator Option Cards */
+  .calc-options { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+  }
+  
+  .calc-opt-card { 
+    display: flex; 
+    align-items: flex-start; 
+    gap: 16px; 
+    cursor: pointer; 
+    padding: 16px 20px; 
+    border-radius: 14px; 
+    border: 1px solid var(--line); 
+    background: var(--bg2); 
+    transition: all 0.25s ease;
+    user-select: none;
+  }
+  
+  .calc-opt-card:hover {
+    border-color: var(--accent);
+  }
+  
+  /* Hidden Input */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Custom Checkbox Container */
+  .card-checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4px;
+    transition: all 0.25s ease;
+    background: var(--bg);
+  }
+  
+  .checkbox-inner {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  /* Checked States and Hover animations */
+  .calc-opt-card.p0-opt input:checked ~ .card-checkbox {
+    border-color: var(--accent-rose);
+    background: rgba(247, 118, 142, 0.1);
+  }
+  .calc-opt-card.p0-opt input:checked ~ .card-checkbox .checkbox-inner {
+    background: var(--accent-rose);
+    opacity: 1;
+    transform: scale(1);
+  }
+  .calc-opt-card.p0-opt.active {
+    border-color: var(--accent-rose);
+    background: rgba(247, 118, 142, 0.04);
+    box-shadow: 0 0 15px rgba(247, 118, 142, 0.06);
+  }
+
+  .calc-opt-card.w1-opt input:checked ~ .card-checkbox {
+    border-color: var(--accent-blue);
+    background: rgba(122, 162, 247, 0.1);
+  }
+  .calc-opt-card.w1-opt input:checked ~ .card-checkbox .checkbox-inner {
+    background: var(--accent-blue);
+    opacity: 1;
+    transform: scale(1);
+  }
+  .calc-opt-card.w1-opt.active {
+    border-color: var(--accent-blue);
+    background: rgba(122, 162, 247, 0.04);
+    box-shadow: 0 0 15px rgba(122, 162, 247, 0.06);
+  }
+
+  .calc-opt-card.w2-opt input:checked ~ .card-checkbox {
+    border-color: var(--accent-purple);
+    background: rgba(187, 154, 247, 0.1);
+  }
+  .calc-opt-card.w2-opt input:checked ~ .card-checkbox .checkbox-inner {
+    background: var(--accent-purple);
+    opacity: 1;
+    transform: scale(1);
+  }
+  .calc-opt-card.w2-opt.active {
+    border-color: var(--accent-purple);
+    background: rgba(187, 154, 247, 0.04);
+    box-shadow: 0 0 15px rgba(187, 154, 247, 0.06);
+  }
+
+  .calc-opt-card.w3-opt input:checked ~ .card-checkbox {
+    border-color: var(--accent-green);
+    background: rgba(158, 206, 106, 0.1);
+  }
+  .calc-opt-card.w3-opt input:checked ~ .card-checkbox .checkbox-inner {
+    background: var(--accent-green);
+    opacity: 1;
+    transform: scale(1);
+  }
+  .calc-opt-card.w3-opt.active {
+    border-color: var(--accent-green);
+    background: rgba(158, 206, 106, 0.04);
+    box-shadow: 0 0 15px rgba(158, 206, 106, 0.06);
+  }
+
+  .card-info { 
+    display: flex; 
+    flex-direction: column; 
+    flex-grow: 1;
+  }
+  
+  .card-meta {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .card-wave-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .card-wave-badge.p0 {
+    background: rgba(247, 118, 142, 0.1);
+    color: var(--accent-rose);
+    border: 1px solid rgba(247, 118, 142, 0.15);
+  }
+  .card-wave-badge.w1 {
+    background: rgba(122, 162, 247, 0.1);
+    color: var(--accent-blue);
+    border: 1px solid rgba(122, 162, 247, 0.15);
+  }
+  .card-wave-badge.w2 {
+    background: rgba(187, 154, 247, 0.1);
+    color: var(--accent-purple);
+    border: 1px solid rgba(187, 154, 247, 0.15);
+  }
+  .card-wave-badge.w3 {
+    background: rgba(158, 206, 106, 0.1);
+    color: var(--accent-green);
+    border: 1px solid rgba(158, 206, 106, 0.15);
+  }
+
+  .card-title { 
+    font-weight: 700; 
+    font-size: 0.95rem; 
+    color: var(--fg); 
+  }
+  
+  .card-desc { 
+    font-size: 0.8rem; 
+    color: var(--fg-dim); 
+    margin-top: 4px; 
+    line-height: 1.45;
+  }
+
+  /* Calculator Dashboard Results */
+  .calc-results { 
+    background: var(--bg2); 
+    border: 1px solid var(--line); 
+    border-radius: 20px; 
+    padding: 30px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 28px;
+    justify-content: center; 
+    box-shadow: var(--shadow-md);
+  }
+  
+  .metric-card {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .metric-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .metric-label {
+    font-size: 0.78rem;
+    color: var(--fg-faint);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .metric-val.text-accuracy { color: var(--accent-green); }
+  .metric-val.text-savings { color: var(--accent); }
+  .metric-val.text-cache { color: var(--accent-purple); }
+  .metric-val.text-security { 
+    font-size: 1.55rem;
+    transition: color 0.3s ease; 
+  }
+
+  .progress-track {
+    height: 8px;
+    background: var(--panel);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    width: 0;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.5s ease, box-shadow 0.5s ease;
+  }
+  .progress-bar.bar-accuracy { background: linear-gradient(90deg, rgba(158,206,106,0.6), var(--accent-green)); box-shadow: 0 0 10px rgba(158,206,106,0.2); }
+  .progress-bar.bar-savings { background: linear-gradient(90deg, rgba(224,175,104,0.6), var(--accent)); box-shadow: 0 0 10px rgba(224,175,104,0.2); }
+  .progress-bar.bar-cache { background: linear-gradient(90deg, rgba(187,154,247,0.6), var(--accent-purple)); box-shadow: 0 0 10px rgba(187,154,247,0.2); }
+  .progress-bar.bar-security { background-color: var(--accent-rose); box-shadow: 0 0 10px rgba(247, 118, 142, 0.2); }
+
+  .metric-desc {
+    font-size: 0.75rem;
+    color: var(--fg-faint);
+  }
+
+  /* Badges inside timeline text */
+  .badge { 
+    display: inline-block; 
+    padding: 3px 10px; 
+    border-radius: 6px; 
+    font-size: 0.72rem; 
+    font-family: var(--mono); 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    margin-bottom: 12px;
+  }
+  
+  .badge.p0 { background: rgba(247, 118, 142, 0.1); color: var(--accent-rose); border: 1px solid rgba(247, 118, 142, 0.2); }
+  .badge.w1 { background: rgba(122, 162, 247, 0.1); color: var(--accent-blue); border: 1px solid rgba(122, 162, 247, 0.2); }
+  .badge.w2 { background: rgba(187, 154, 247, 0.1); color: var(--accent-purple); border: 1px solid rgba(187, 154, 247, 0.2); }
+  .badge.w3 { background: rgba(158, 206, 106, 0.1); color: var(--accent-green); border: 1px solid rgba(158, 206, 106, 0.2); }
+
+  /* Hardening Section Styles */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin: 30px 0;
+  }
+  @media(max-width: 1024px){
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media(max-width: 640px){
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+  
+  .hardening-card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+  }
+  
+  .hardening-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-rose);
+  }
+  
+  .hardening-card.accent-p0:hover { border-color: var(--accent-rose); }
+  .hardening-card.accent-w1:hover { border-color: var(--accent-blue); }
+  .hardening-card.accent-w2:hover { border-color: var(--accent-purple); }
+  .hardening-card.accent-w3:hover { border-color: var(--accent-green); }
+  
+  .hardening-card h3 {
+    font-family: var(--display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--fg);
+  }
+  
+  .hardening-card .vulnerability {
+    font-size: 0.8rem;
+    color: var(--accent-rose);
+    background: rgba(247, 118, 142, 0.05);
+    border: 1px solid rgba(247, 118, 142, 0.15);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  
+  .hardening-card .mitigation {
+    font-size: 0.82rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+    flex-grow: 1;
+  }
+  
+  .hardening-card .mitigation strong {
+    color: var(--accent-green);
+  }
+
+  /* Coexistence Section Styles */
+  .coexist-card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+  }
+  .coexist-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .coexist-card.claude:hover { border-color: var(--accent2); }
+  .coexist-card.codex:hover { border-color: var(--accent-blue); }
+  .coexist-card.antigravity:hover { border-color: var(--accent); }
+  
+  .coexist-card h3 {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .agent-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .agent-badge.claude { background: rgba(255, 158, 100, 0.1); color: var(--accent2); border: 1px solid rgba(255, 158, 100, 0.2); }
+  .agent-badge.codex { background: rgba(122, 162, 247, 0.1); color: var(--accent-blue); border: 1px solid rgba(122, 162, 247, 0.2); }
+  .agent-badge.antigravity { background: rgba(224, 175, 104, 0.1); color: var(--accent); border: 1px solid rgba(224, 175, 104, 0.2); }
+  
+  .coexist-card ul {
+    list-style-type: none;
+    margin-top: 12px;
+  }
+  .coexist-card li {
+    font-size: 0.88rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 16px;
+  }
+  .coexist-card li::before {
+    content: "•";
+    color: var(--accent-blue);
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+  }
+  .coexist-card.claude li::before { color: var(--accent2); }
+  .coexist-card.codex li::before { color: var(--accent-blue); }
+  .coexist-card.antigravity li::before { color: var(--accent); }
+  
+  .protocol-details {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 30px;
+    box-shadow: var(--shadow-sm);
+  }
+  .protocol-details h3 {
+    font-family: var(--display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--fg);
+  }
+  .protocol-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .protocol-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .protocol-row:first-child {
+    padding-top: 0;
+  }
+  @media(max-width: 768px) {
+    .protocol-row { grid-template-columns: 1fr; gap: 8px; }
+  }
+  .protocol-key {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .protocol-val {
+    font-size: 0.9rem;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+
+  .calc-disclaimer {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: rgba(247, 118, 142, 0.02);
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--fg-faint);
+    line-height: 1.5;
+    width: 100%;
+  }
+  .calc-disclaimer strong {
+    color: var(--fg-dim);
+  }
+
+  /* Checkbox items in timeline */
+  .time-desc {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .time-desc-status {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  
+  .time-desc-status.built {
+    background: rgba(158, 206, 106, 0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(158, 206, 106, 0.3);
+  }
+  .time-desc-status.built::before {
+    content: "✓";
+  }
+  
+  .time-desc-status.pending {
+    background: rgba(122, 162, 247, 0.05);
+    color: var(--fg-faint);
+    border: 1px solid var(--line);
+  }
+  .time-desc-status.pending::before {
+    content: "";
+  }
+
+  /* Footer */
+  footer {
+    padding: 50px 0;
+    border-top: 1px solid var(--line);
+    margin-top: 40px;
+    background: var(--bg2);
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono); 
+    font-size: 0.8rem; 
+    color: var(--fg-faint);
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  @media(max-width: 600px){
+    .footer-inner { flex-direction: column; text-align: center; }
+  }
+
+  /* ===== Cross-verification update (2026-06-13) ===== */
+  .cv-banner {
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent2);
+    background: var(--panel);
+    padding: 26px 30px; border-radius: 12px; margin: 0 0 22px;
+  }
+  .cv-kicker { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent2); }
+  .cv-banner h3 { font-family: var(--display); font-size: 1.5rem; margin: 10px 0 12px; letter-spacing: -0.02em; }
+  .cv-banner p { color: var(--fg-dim); margin: 0 0 10px; }
+  .cv-banner strong { color: var(--fg); }
+  .cv-sources { display:flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .cv-src { font-family: var(--mono); font-size: 0.7rem; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--fg-faint); }
+
+  .gate-flow { display:flex; flex-wrap: wrap; align-items: stretch; gap: 10px; margin: 24px 0 8px; }
+  .gate-node { flex: 1 1 150px; min-width:0; border:1px solid var(--line); border-radius:10px; padding:16px; background: var(--bg2); }
+  .gate-node.now { border-color: var(--accent2); box-shadow: var(--glow-accent2); }
+  .gate-tag { font-family: var(--mono); font-size:0.66rem; letter-spacing:0.1em; text-transform:uppercase; color: var(--fg-faint); }
+  .gate-node.now .gate-tag { color: var(--accent2); }
+  .gate-node h4 { margin: 8px 0 6px; font-size: 0.95rem; }
+  .gate-node p { margin:0; font-size: 0.8rem; color: var(--fg-dim); }
+  .gate-arrow { align-self:center; color: var(--fg-faint); font-family: var(--mono); }
+
+  .ev-table { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .ev-row { display:grid; grid-template-columns: minmax(0,1.3fr) auto auto minmax(0,1.7fr); gap: 16px; align-items:center; padding: 14px 18px; border-bottom:1px solid var(--line); }
+  .ev-row:last-child{ border-bottom:0; }
+  .ev-row.head { background: var(--bg2); font-family: var(--mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color: var(--fg-faint); }
+  .ev-name { font-weight:600; font-size:0.92rem; }
+  .ev-name small { display:block; font-weight:400; color: var(--fg-faint); font-family: var(--mono); font-size:0.7rem; margin-top:3px; }
+  .ev-badge { font-family: var(--mono); font-size:0.64rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:4px 8px; border-radius:6px; border:1px solid currentColor; white-space:nowrap; width:fit-content; }
+  .ev-measured { color: var(--accent-green); }
+  .ev-hypothesis { color: var(--accent); }
+  .ev-unknown { color: var(--accent-blue); }
+  .ev-rejected { color: var(--accent-rose); }
+  .ev-note { color: var(--fg-dim); font-size:0.84rem; }
+  .ev-note code { font-size:0.8rem; }
+  @media(max-width:760px){ .ev-row{ grid-template-columns: 1fr auto; } .ev-row .ev-badge:nth-of-type(2){ display:none; } .ev-note{ grid-column:1/3; } .ev-row.head{ display:none; } }
+
+  .finding-card { border:1px solid var(--line); border-radius:12px; padding:20px; background: var(--panel); }
+  .fc-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .fc-sev { font-family:var(--mono); font-size:0.62rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:3px 7px; border-radius:5px; }
+  .fc-sev.critical{ background: rgba(247,118,142,0.15); color: var(--accent-rose); border:1px solid rgba(247,118,142,0.4);}
+  .fc-sev.high{ background: rgba(255,158,100,0.13); color: var(--accent2); border:1px solid rgba(255,158,100,0.35);}
+  .fc-sev.medium{ background: rgba(122,162,247,0.1); color: var(--accent-blue); border:1px solid rgba(122,162,247,0.3);}
+  .fc-conf { font-family:var(--mono); font-size:0.66rem; color: var(--fg-faint); margin-left:auto; }
+  .finding-card h4 { margin: 0 0 8px; font-size:1rem; }
+  .finding-card p { margin:0 0 8px; font-size:0.86rem; color: var(--fg-dim); }
+  .finding-card p code, .fc-fix code { font-size:0.78rem; }
+  .fc-fix { font-size:0.84rem; color: var(--fg); border-top:1px solid var(--line); padding-top:10px; margin-top:4px; }
+  .fc-fix b { color: var(--accent-green); font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+
+<button id="theme-toggle">☀️ Light Mode</button>
+
+<header>
+  <div class="wrap">
+    <a href="index.html" class="back-link">⬅ ️Back to main explainer</a>
+    <div><span class="ext">FactsPack v0.3 — Roadmap, adversarially reviewed</span></div>
+    <h1>Fix the <em>contract</em> first.</h1>
+    <p class="tagline">FactsPack combines schema-once tabular streams with dictionary interning. This roadmap toward v0.3 / agent-v5 has been adversarially reviewed three ways — by Claude, Codex, and Antigravity. The review found the v0.2 foundation has contract bugs the roadmap was about to build on. The honest path: repair the contract, prove the core claim with a real benchmark, then add features one measured delta at a time.</p>
+  </div>
+</header>
+
+<section id="verdict">
+  <div class="wrap">
+    <div class="cv-banner">
+      <span class="cv-kicker">Three-way cross-verification · 2026-06-13</span>
+      <h3>The plan is sound as a benchmark-gated plan — and dangerous as anything more.</h3>
+      <p>An independent 145-agent red-team (46 objections, <strong>30 survived</strong> three-skeptic refutation) and a separate contract review converged on the same load-bearing findings. The single best decision — making a public benchmark the gate, and shipping <strong>no unmeasured number</strong> as fact — is real. But the set scheduled a diff-chain economic moat on top of a v0.2 row-count rule that is internally self-contradictory for diffs, routed probabilistic symbol matching into a destructive delete/replace path, and asserted two legal/security claims as settled fact. None of that kills the roadmap; it puts a correctness gate in front of it.</p>
+      <p><strong>What changed on this page:</strong> the impact calculator (which rendered unmeasured weights as precise percentages) is replaced with an honest evidence-state matrix; the quadrant no longer plots <code>.pack</code> at invented coordinates; fabricated impact figures, the "Bulletproof" label, and the "process boundary escapes AGPL" legal claim are struck.</p>
+      <div class="cv-sources">
+        <span class="cv-src">Claude — roadmap + workflow red-team</span>
+        <span class="cv-src">Codex — contract &amp; state-safety</span>
+        <span class="cv-src">Antigravity — adversarial contract review</span>
+        <span class="cv-src">verified against codec bytes</span>
+      </div>
+    </div>
+
+    <h2>Dependency order, not optimism</h2>
+    <p class="lead">Every later stage depends on the one before it. Chain work — the unique economic moat — comes last, because it cannot be built on a contract that two conformant readers resolve differently.</p>
+    <div class="gate-flow">
+      <div class="gate-node now">
+        <span class="gate-tag">Gate 0 · now</span>
+        <h4>Repair v0.2 + freeze</h4>
+        <p>Fix the contract bugs below. No new normative tables until the wire is self-consistent and byte-determinism is proven (not assumed).</p>
+      </div>
+      <span class="gate-arrow">→</span>
+      <div class="gate-node">
+        <span class="gate-tag">Gate 1</span>
+        <h4>Conformance</h4>
+        <p>Byte-exact fixtures + positive/negative vectors a strict decoder enforces. Independent lossless round-trip oracle.</p>
+      </div>
+      <span class="gate-arrow">→</span>
+      <div class="gate-node">
+        <span class="gate-tag">Gate 2 · P0.1</span>
+        <h4>Measure the core claim</h4>
+        <p>Private, statistical benchmark: does interning + legend beat JSON / Markdown-KV on a <em>real code map</em>? Publication is owner-gated.</p>
+      </div>
+      <span class="gate-arrow">→</span>
+      <div class="gate-node">
+        <span class="gate-tag">Gate 3</span>
+        <h4>Additive features</h4>
+        <p>Admit Wave-1 items one at a time, each behind a measured delta that clears a pre-registered confidence interval.</p>
+      </div>
+      <span class="gate-arrow">→</span>
+      <div class="gate-node">
+        <span class="gate-tag">Gate 4</span>
+        <h4>Identity → chains</h4>
+        <p>Prove stable, deterministic symbol identity, then build the master/diff chain on top of it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="quadrant">
+  <div class="wrap">
+    <h2>Format Landscape — Cost vs. Accuracy</h2>
+    <p class="lead">Only the three points below are measured: they come from a published third-party retrieval benchmark (GPT-4.1-nano, 1,000 synthetic records — <em>not</em> code maps). FactsPack's position is deliberately <strong>not plotted</strong>: where <code>.pack</code> lands is exactly the question P0.1 exists to answer, and inventing a coordinate would be the fabricated precision this review removed. The aim is the top-right quadrant; whether the legend gets it there is unproven.</p>
+    
+    <div class="quad-container">
+      <div class="quad-chart">
+        <div class="chart-label-y">Retrieval Accuracy (Comprehension)</div>
+        
+        <div class="chart-area">
+          <!-- Plot points -->
+          <!-- CSV -->
+          <div class="plot-point" style="left: 15%; bottom: 44%;" data-format="csv">
+            <div class="plot-dot-container">
+              <div class="plot-dot"></div>
+              <div class="plot-ring"></div>
+            </div>
+            <div class="plot-label label-bottom">CSV (44.3%)</div>
+            <div class="plot-tooltip">
+              <strong>CSV Format</strong>
+              <div class="tooltip-row"><span>Accuracy:</span> <strong>44.3%</strong></div>
+              <div class="tooltip-row"><span>Token Savings:</span> <strong>High (~80%)</strong></div>
+              <p class="tooltip-desc">Lack of local keys and positional relationships causes attention heads to misalign nodes/edges, degrading graph retrieval.</p>
+            </div>
+          </div>
+          
+          <!-- JSON -->
+          <div class="plot-point" style="left: 65%; bottom: 52%;" data-format="json">
+            <div class="plot-dot-container">
+              <div class="plot-dot"></div>
+              <div class="plot-ring"></div>
+            </div>
+            <div class="plot-label label-bottom">JSON (52.3%)</div>
+            <div class="plot-tooltip">
+              <strong>JSON Format</strong>
+              <div class="tooltip-row"><span>Accuracy:</span> <strong>52.3%</strong></div>
+              <div class="tooltip-row"><span>Token Savings:</span> <strong>None (0%)</strong></div>
+              <p class="tooltip-desc">Repeating keys provide explicit context, but the excessive repetition results in massive, costly token bloat.</p>
+            </div>
+          </div>
+          
+          <!-- Markdown-KV (Expensive) -->
+          <div class="plot-point align-left-tooltip" style="left: 90%; bottom: 60.7%;" data-format="md-kv">
+            <div class="plot-dot-container">
+              <div class="plot-dot"></div>
+              <div class="plot-ring"></div>
+            </div>
+            <div class="plot-label label-bottom">Markdown-KV (60.7%)</div>
+            <div class="plot-tooltip">
+              <strong>Markdown Key-Value</strong>
+              <div class="tooltip-row"><span>Accuracy:</span> <strong>60.7%</strong></div>
+              <div class="tooltip-row"><span>Token Savings:</span> <strong>Negative (-50%+)</strong></div>
+              <p class="tooltip-desc">Highly structured markdown layout is easy for models to comprehend but uses an unsustainable token budget.</p>
+            </div>
+          </div>
+          
+          <!-- .pack target zone (UNMEASURED — deliberately not a point) -->
+          <div class="plot-point" style="left: 78%; bottom: 80%; pointer-events:none;" data-format="pack-target">
+            <div class="plot-label label-top" style="font-weight:800; color: var(--accent2); border:1px dashed var(--accent2); padding:4px 8px; border-radius:6px; white-space:nowrap;">.pack target — ? (P0.1)</div>
+          </div>
+        </div>
+
+        <div class="chart-label-x">Token Efficiency (Berry Savings)</div>
+      </div>
+
+      <div class="quad-notes">
+        <div class="card">
+          <h4>Why dense positional formats can hurt accuracy</h4>
+          <p>The published evidence puts CSV/pipe-delimited at the bottom of retrieval accuracy — columns with no repeating labels add an indirection layer. <code>.pack</code> shares that density (plus interning), which is the <em>risk</em> P0.1 must test, not a settled result. The cited graph-distance "6×" figure is from synthetic graph QA, not code maps.</p>
+        </div>
+        <div class="card accent-w2">
+          <h4>The bet v0.3 is making</h4>
+          <p>The in-band legend, explicit types, and incident edge ordering are <em>hypothesised</em> to cancel the density penalty while keeping interning's token savings. Plausible, evidence-informed — but unproven on a code map until measured. The honest claim is a hypothesis, not a coordinate.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="wrap">
+    <h2>The Optimal Path Timeline</h2>
+    <p class="lead">We split the transition into four distinct stages: Strategic Foundations (P0) to secure credibility, Wave 1 compatible extensions, Wave 2 breaking upgrades, and Wave 3 ecosystem scaling.</p>
+    
+    <div class="timeline">
+      <!-- Gate 0 -->
+      <div class="time-step p0">
+        <div class="time-dot">G0</div>
+        <div class="time-content">
+          <span class="badge p0">Gate 0 · blocking</span>
+          <h3>Repair the v0.2 contract <em>before</em> any v0.3 feature</h3>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Required / Not yet done"></span>
+            <span><strong>1. Valid canonical examples:</strong> the spec's own worked examples use spaces, not the mandated tab <code>0x09</code> (verified) — regenerate them from byte-exact fixtures with a visible <code>&lt;TAB&gt;</code> view.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Required / Not yet done"></span>
+            <span><strong>2. Fix diff/master count semantics:</strong> a diff with header <code>rowCount=0</code> contradicts the trailer's "rows == header count" rule. Define master / diff-sentinel / op-count as separate quantities; enforce equality for masters only.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Required / Not yet done"></span>
+            <span><strong>3. Strict vs legacy decoder profiles:</strong> a missing trailer is silently accepted today — strict v0.2 must reject it. Add resource limits (the decoder parses untrusted repos on Workers).</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Required / Not yet done"></span>
+            <span><strong>4. Prove byte-determinism:</strong> the cache moat assumes "same input → same bytes," but float formatting, dict-key order, and Windows-vs-POSIX paths are unpinned and untested. Pin them; add a conformance test.</span>
+          </div>
+          <div class="time-impact rose">No new normative tables ship until these are fixed and determinism is proven — not assumed.</div>
+        </div>
+      </div>
+
+      <!-- P0 -->
+      <div class="time-step p0">
+        <div class="time-dot">P0</div>
+        <div class="time-content">
+          <span class="badge p0">Strategic</span>
+          <h3>Foundations &amp; Credibility</h3>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Scheduled / Proposed"></span>
+            <span><strong>1. Private accuracy benchmark (the gate):</strong> measure <code>.pack</code> vs JSON / CSV / Markdown-KV / TOON across 3+ model families on a <em>real code map</em>, with pinned models, fixed temperature, and pre-registered confidence intervals — gate on the lower CI bound, not the mean. Publication is owner-approved only.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Owner decision"></span>
+            <span><strong>2. AGPL-3.0 codec policy (settled):</strong> retain AGPL-3.0 + commercial for all code including the codec. Ecosystem viability comes from first-party ports and a permissively-licensed spec/fixtures (owner's open sub-question) — <em>not</em> from claiming a process boundary escapes copyleft, which is a legal question for counsel.</span>
+          </div>
+          <div class="time-impact rose">Decision: AGPL-3.0 retained by the owner; adoption risk managed at the spec/fixtures layer, not via unverified legal claims.</div>
+        </div>
+      </div>
+      
+      <!-- Wave 1 -->
+      <div class="time-step w1">
+        <div class="time-dot">W1</div>
+        <div class="time-content">
+          <span class="badge w1">Wave 1</span>
+          <h3>Additive &amp; Compatible Extensions (v0.2.x)</h3>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Built / Enforced"></span>
+            <span><strong>1. Incident Edge Ordering:</strong> Group outgoing edges from a single source node together. Keeps connected nodes close in context.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Proposed — gated by P0.1"></span>
+            <span><strong>2. Communities Table:</strong> hierarchical region labels (GraphRAG-style). Verified defensible on the real graph (4 communities cover 50%), but the <em>summary</em> column must be cut — non-deterministic LLM text breaks the hashed wire. Heuristic label needs an exact tie-break rule.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Proposed — gated by P0.1"></span>
+            <span><strong>3. Datatypes in Legend (Compatible):</strong> column typings in <code>;</code> comment lines (e.g. <code>; types symbols id=int</code>) so legacy readers ignore them. Scope to storage-form specials the prose legend can't disambiguate; the borrowed "+20%" figure is dropped pending measurement.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Built / Enforced"></span>
+            <span><strong>4. In-band Legend &amp; Metadata:</strong> Self-describing schema definitions, null cell markers, and escaping rules written directly into comment lines (<code>;</code> lines).</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Built / Enforced"></span>
+            <span><strong>5. SHA-256 Integrity Verification:</strong> Final trailer validation (<code>; end rows=... sha256=...</code>) to prevent truncated payloads from misinforming agents.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Built / Enforced"></span>
+            <span><strong>6. Hot-Reference inline hints:</strong> Basename prefixes added to most-referenced identifiers (e.g. <code>F12~cli.ts</code>) to prevent lookup errors.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Built / Enforced"></span>
+            <span><strong>7. Unified Intern Namespaces:</strong> Paths and symbol columns share a unified identifier space across tables, removing key collisions.</span>
+          </div>
+          <div class="time-impact blue">Impact unmeasured. Each item must show a measured delta on the P0.1 code-map benchmark or it does not ship — "emit what's computed" is a hypothesis, not a result.</div>
+        </div>
+      </div>
+
+      <!-- Wave 2 -->
+      <div class="time-step w2">
+        <div class="time-dot">W2</div>
+        <div class="time-content">
+          <span class="badge w2">Wave 2</span>
+          <h3>Breaking Core Changes (agent-v5)</h3>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Scheduled / Proposed"></span>
+            <span><strong>1. SCIP Position-Free Monikers (Strict + Lite):</strong> replace line-number IDs with stable descriptors. <strong>Lite (heuristic) monikers are hints only</strong> — they may never key a delete/replace, because a probabilistic match can silently mutate the wrong row. On uncertainty: delete-plus-add or re-index.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Scheduled / Proposed"></span>
+            <span><strong>2. Master/Diff Chains:</strong> sequenced chains with manifest pinning, built only after identity is stable. Coalescing thresholds are <em>emitter policy, not wire</em>, and stay unmeasured — the rebuild trigger is set by the benchmark's chain-depth curve, not a guessed file count. Needs a concurrency story for multi-agent repos.</span>
+          </div>
+          <div class="time-impact purple">Cache economics are the real moat — but unproven: Anthropic's cache has a ~1024-token floor and ~5-min TTL, so the win can be negative for small or intermittent packs. P0.1 must price it with real billing numbers.</div>
+        </div>
+      </div>
+      
+      <!-- Wave 3 -->
+      <div class="time-step w3">
+        <div class="time-dot">W3</div>
+        <div class="time-content">
+          <span class="badge w3">Wave 3</span>
+          <h3>Ecosystem Scaling &amp; Hardening</h3>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Scheduled / Proposed"></span>
+            <span><strong>1. Python Port &amp; pip/npm CLI:</strong> Port parser to Python where modern agent frameworks live.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Scheduled / Proposed"></span>
+            <span><strong>2. Conformance Vectors:</strong> Spec split with test fixtures to ensure multi-language parity.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status built" title="Escaping shipped"></span>
+            <span><strong>3. Delimiter escape armor (shipped) — XML is organization, not security:</strong> strict <code>\t \n \\</code> escaping is real defense. Wrapping a pack in XML tags is a prompt-<em>structuring</em> tip, <strong>not</strong> injection armor — a cell containing <code>&lt;/tag&gt;</code> can close it. The real defenses are tool-side decode, instruction-taint tracking, and model alignment.</span>
+          </div>
+          <div class="time-desc">
+            <span class="time-desc-status pending" title="Scheduled / Proposed"></span>
+            <span><strong>4. Authenticity (out-of-band):</strong> a detached signature over the whole artifact, verified in the loader before bytes reach the model. It attests <em>origin only, never content safety</em> — the reading LLM cannot verify it. Needs a key/trust/rotation model first.</span>
+          </div>
+          <div class="time-impact green">Goal: frictionless third-party reading + agent-framework adoption — in tension with AGPL, and dependent on the contract and benchmark gates clearing first.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="coexistence" style="border-top: 1px solid var(--line); padding-top: 50px; margin-top: 30px;">
+  <div class="wrap">
+    <h2>Cross-Agent Coordination &amp; Coexistence Protocol</h2>
+    <p class="lead">Three advanced coding agents—Claude Code, OpenAI Codex, and Antigravity—cooperatively define the FactsPack v0.3 / agent-v5 standard. We respect each agent's native constraints, reasoning styles, and execution frameworks to deliver a unified, high-performance transport standard.</p>
+    
+    <div class="grid-3">
+      <!-- Claude Code -->
+      <div class="coexist-card claude">
+        <h3>
+          <span class="agent-badge claude">Claude Code</span>
+        </h3>
+        <ul>
+          <li><strong>Prompt-Cache Optimization:</strong> benefits from cache discounts when a pinned master prefix stays stable — subject to the cache's minimum-prefix floor and TTL, which P0.1 must measure before the discount is claimed as a number.</li>
+          <li><strong>XML for structure, not shielding:</strong> wraps long-context data in tags as a recall/organization aid. This is <em>not</em> an injection boundary; safety comes from tool-side decode and treating every cell as untrusted data.</li>
+          <li><strong>Process Separation (architecture only):</strong> integrates with the codec over MCP/stdio boundaries. Whether that boundary changes AGPL obligations is a question for counsel, not an engineering guarantee.</li>
+        </ul>
+      </div>
+      
+      <!-- OpenAI Codex -->
+      <div class="coexist-card codex">
+        <h3>
+          <span class="agent-badge codex">OpenAI Codex</span>
+        </h3>
+        <ul>
+          <li><strong>GraphRAG Traversal:</strong> Integrates Incident Edge Grouping and precomputed <code>paths</code> tables to bypass multi-hop traversal reasoning decay.</li>
+          <li><strong>Dual-Mode Compilation:</strong> Employs Lite AST/Regex parsing mode alongside Strict SCIP parsing to bootstrap symbol indexing without heavy compiler chains.</li>
+          <li><strong>Neo4j Exporter:</strong> Relies on quick translation mapping to Neo4j/Cypher backends for graph-database-guided code search.</li>
+        </ul>
+      </div>
+      
+      <!-- Antigravity -->
+      <div class="coexist-card antigravity">
+        <h3>
+          <span class="agent-badge antigravity">Antigravity</span>
+        </h3>
+        <ul>
+          <li><strong>Adversarial Hardening:</strong> isolates metadata typings in comment legends to preserve legacy-reader compatibility; found the tokenizer column-shift attack on empty cells.</li>
+          <li><strong>Contract-first sequencing:</strong> coalescing thresholds are emitter policy, not settled constants — the rebuild trigger waits on a measured chain-depth curve, not a guessed file count.</li>
+          <li><strong>Empirical Validation:</strong> spearheads the retrieval-accuracy benchmark (private first; published only on owner approval) to verify legend efficacy across 3+ LLM families.</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="protocol-details">
+      <h3>Normative Coexistence Protocols</h3>
+      
+      <div class="protocol-row">
+        <div class="protocol-key">Escaping (real) vs. XML (structure)</div>
+        <div class="protocol-val">
+          Text columns carrying source snippets or linter messages MUST be strictly escaped (<code>\t</code>, <code>\n</code>, <code>\\</code>) — this is the load-bearing defense against column-splitting and grammar injection. XML wrapping is offered as an optional prompt-<em>organization</em> aid; it is explicitly <strong>not</strong> an injection boundary (a cell can contain a closing tag), and must never be labelled "shielded" or "bulletproof." Defense in depth is tool-side decode + instruction-taint tracking + treating every cell as data.
+        </div>
+      </div>
+
+      <div class="protocol-row">
+        <div class="protocol-key">Strict vs. Lite Monikers</div>
+        <div class="protocol-val">
+          v0.3 defines a dual symbol-moniker system: <strong>Strict Mode</strong> uses Sourcegraph SCIP schemas (CI/CD); <strong>Lite Mode</strong> uses regex/AST heuristics for build-free editors. Both may populate the same moniker field, but <strong>Lite monikers are non-authoritative hints</strong> — they may not key a <code>+</code>/<code>x</code> delta operation, and a chain must not mix modes unless both provably emit byte-identical keys. A probabilistic match is not a primary key.
+        </div>
+      </div>
+
+      <div class="protocol-row">
+        <div class="protocol-key">AGPL-3.0 boundary (architecture, not legal advice)</div>
+        <div class="protocol-val">
+          The codec stays AGPL-3.0 + commercial (owner's settled decision). Integrations are <em>architected</em> to talk to the codec over stdio/MCP process channels. Whether that boundary affects copyleft obligations is a fact-specific legal question deferred to qualified counsel — this page makes no claim that a process boundary "escapes" the AGPL. Ecosystem viability is pursued through first-party ports and (owner's open call) permissively-licensed spec text + conformance fixtures.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="hardening">
+  <div class="wrap">
+    <h2>Adversarial Review &amp; Hardening Report</h2>
+    <p class="lead">Three independent reviews converged on the same risks. Below are the mitigations for the design-level risks; the <strong>source-verified findings</strong> that follow are confirmed against the actual codec and spec bytes — those are bugs, not hypotheses.</p>
+    
+    <div class="grid-3">
+      <!-- Card 1 -->
+      <div class="hardening-card accent-w1">
+        <h3>1. Legend Type Pollution</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Embedding datatypes directly in the <code>&amp;</code> schema line (e.g. <code>id:int</code>) crashes or misleads legacy v0.2 readers.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> In <strong>Wave 1</strong>, datatypes MUST be declared in standard comment lines (e.g. <code>; types symbols id=int</code>) which legacy readers ignore. Defer inline type tokens to <strong>Wave 2</strong>.</p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="hardening-card accent-w1">
+        <h3>2. Custom Table Heap Blowup</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Naive legacy parsers may crash or run out of memory when encountering new tables like <code>communities</code>.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Emitters must append new tables <strong>after</strong> core v0.2 tables. Test suites must validate that legacy parsers silently disregard unknown trailing tables without allocating heap memory.</p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="hardening-card accent-w2">
+        <h3>3. SCIP Compiler Dependency</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Requiring heavy compiler-level indexers for SCIP monikers blocks lightweight agent and IDE plugin integrations.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Define a <strong>Dual-Mode Symbol Indexing Spec</strong>: use Strict SCIP in CI/CD, but provide a heuristic AST/Regex-based <strong>Lite Fallback</strong> for build-free local environments.</p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="hardening-card accent-w2">
+        <h3>4. Diff Chain Bloat &amp; Attention Decay</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Long sequences of incremental diff packs (e.g. 20 edits) bloat the token footprint and cause attention lookup decay.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Enforce a <strong>Coalescing Threshold</strong>. If a diff chain exceeds <strong>5 files</strong> or <strong>20%</strong> of the master pack's size, rebuild a new unified master pack immediately.</p>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="hardening-card accent-w3">
+        <h3>5. Token Injection Payload Shielding</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Attacker code carrying delimiters can delete data. XML wrappers are for prompt structure, not security boundaries: cell contents containing <code>&lt;</code>/<code>&gt;</code> can close tags prematurely.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Escaping of delimiters (<code>\n</code>, <code>\t</code>, <code>\\</code>) in text cells. Offer XML tags for prompt organization, but enforce <strong>tool-side decoding, instruction taint tracking, and model-level alignment</strong>.</p>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="hardening-card accent-w3">
+        <h3>6. Cache Invalidation Sync Race</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Minor file edits out of order can trigger diff rebuilds that invalidate the LLM's prompt prefix cache; mid-session diff insertion before the conversation busts the very prefix it aims to preserve.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Pin master+chain once at session start (immutable prefix); deliver later updates as chronological messages appended <em>after</em> the conversation. A <code>latest.manifest</code> orders diff hashes — this improves cache stability but cannot <em>guarantee</em> hits (floor/TTL apply).</p>
+      </div>
+
+      <!-- Card 7 -->
+      <div class="hardening-card accent-w2">
+        <h3>7. Row-Count Semantic Contradiction</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Incremental diffs with header <code>rowCount=0</code> conflict with the trailer's requirement to match decoded records.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> In v0.3, define separate quantities: header <code>rows</code> (materialized baseline count), header <code>ops</code> (patch operations count), and trailer <code>records</code> (physical transmission lines).</p>
+      </div>
+
+      <!-- Card 8 -->
+      <div class="hardening-card accent-w1">
+        <h3>8. Lossy Converter Edge Cases</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Converter is labeled lossless, but Unicode minus collisions, nested JSON objects, and colliding column names collapse data structures.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Output warnings for lossy conversions and explicitly warn developers that tabular flattening is lossy for complex nested JSON structures.</p>
+      </div>
+
+      <!-- Card 9 -->
+      <div class="hardening-card accent-w1">
+        <h3>9. Optional v0.2 Integrity Bypass</h3>
+        <div class="vulnerability"><strong>Risk:</strong> Reference decoder allows v0.2 packs to drop the trailer, falling back to unverified v0.1 parsing, permitting truncation attacks.</div>
+        <p class="mitigation"><strong>Mitigation:</strong> Enforce strict validation, rejecting v0.2 packs that omit the `; end` trailer unless compatibility is explicitly configured.</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top:56px;">Source-verified findings</h2>
+    <p class="lead">These were checked against the actual codec and spec bytes by two independent reviews — they are confirmed defects, not design opinions. The first four block Gate 0.</p>
+    <div class="grid-3">
+      <div class="finding-card">
+        <div class="fc-top"><span class="fc-sev critical">Critical</span><span class="fc-conf">verified · triple-confirmed</span></div>
+        <h4>Canonical examples aren't valid wire bytes</h4>
+        <p><code>FACTSPACK.md:81</code> mandates tab <code>0x09</code>, but the worked examples at <code>:241</code> and <code>:272</code> contain <strong>zero tabs</strong> (all spaces). The decoder splits strictly on <code>\t</code> — copy the spec's own "lossless" example and it is rejected.</p>
+        <p class="fc-fix"><b>Fix</b> Generate docs from byte-exact fixtures; show a visible <code>&lt;TAB&gt;</code> companion; decode-and-reencode every normative example in CI.</p>
+      </div>
+
+      <div class="finding-card">
+        <div class="fc-top"><span class="fc-sev critical">Critical</span><span class="fc-conf">verified · bundle.mjs:112/114/431</span></div>
+        <h4>Diff row-count contract is self-contradictory</h4>
+        <p>A diff has header <code>rowCount=0</code> ("patch only") but the spec demands trailer <code>rows == header count when not -</code>. <code>0 ≠ -</code>, so the rule requires <code>2 == 0</code>. The shipped decoder silently never enforces it — so the "cite or refuse" integrity contract is a no-op for the exact file the chain emits per commit.</p>
+        <p class="fc-fix"><b>Fix</b> Separate named quantities: master header = baseline count; diff header = 0 sentinel bound to <code>kind=diff</code>; trailer = physical op count; equality required for masters only. Block the chain until fixed.</p>
+      </div>
+
+      <div class="finding-card">
+        <div class="fc-top"><span class="fc-sev critical">Critical</span><span class="fc-conf">verified · decoder</span></div>
+        <h4>Strict v0.2 integrity is optional</h4>
+        <p>A trailer-less pack returns success; the decoder cannot tell a legitimate v0.1 pack from a truncated v0.2 one, and never validates <code>header.rowCount</code>. The spec says v0.2 consumers MUST verify the trailer is present — the decoder doesn't.</p>
+        <p class="fc-fix"><b>Fix</b> Explicit <code>strictV02</code> vs <code>legacy</code> profiles; strict requires trailer + header + kind-legality + duplicate rejection + resource limits.</p>
+      </div>
+
+      <div class="finding-card">
+        <div class="fc-top"><span class="fc-sev high">High</span><span class="fc-conf">verified · validate.mjs:21</span></div>
+        <h4>The validator proves acceptance, not losslessness</h4>
+        <p>The test oracle maps literal <code>-</code> → <code>−</code> (U+2212) and counts the <code>lossyDash</code> cases as <strong>pass</strong> under a <code>lossless</code> label. It normalizes away the exact loss it should catch. "15/15 pass" is smoke coverage, not a round-trip proof.</p>
+        <p class="fc-fix"><b>Fix</b> Independent exact round-trip oracle; reject ambiguous input with a precise error rather than normalizing it green.</p>
+      </div>
+
+      <div class="finding-card">
+        <div class="fc-top"><span class="fc-sev high">High</span><span class="fc-conf">blind spot · uncaught by prior reviews</span></div>
+        <h4>Byte-determinism is assumed, not proven</h4>
+        <p>The cache moat rests on "same input → same bytes," but float formatting (<code>imp=0.0242</code> — digits? rounding?), dict-key order, free-form legend wording, and <strong>Windows-vs-POSIX path separators</strong> (this repo is win32) are unpinned with zero conformance test. If any varies, the moat is already broken.</p>
+        <p class="fc-fix"><b>Fix</b> Make canonicalization normative incl. number formatting and path normalization; add a cross-platform determinism conformance test before selling the cache story.</p>
+      </div>
+
+      <div class="finding-card">
+        <div class="fc-top"><span class="fc-sev high">High</span><span class="fc-conf">blind spot · live deployment</span></div>
+        <h4>Decoder has no resource limits — a live DoS hole</h4>
+        <p>The current branch parses <code>.pack</code> from <em>untrusted GitHub repos on Workers</em>. A pathological pack (billions of forward <code>@</code> refs) exhausts memory <strong>before</strong> the sha256 trailer is reached — whole-file dictionary resolution is post-parse. The adversarial corpus lists poisoning but not resource exhaustion.</p>
+        <p class="fc-fix"><b>Fix</b> Configurable caps on bytes, lines, rows, columns, tables, dictionary entries; add resource-exhaustion cases to the corpus.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="interactive">
+  <div class="wrap">
+    <h2>Evidence-state matrix</h2>
+    <p class="lead">This replaces the old impact calculator, which rendered unmeasured feature weights as precise percentages — the exact fabricated precision this review removed. Every claim below carries an honest evidence state. No score is invented; an unknown stays unknown until P0.1 measures it.</p>
+
+    <div class="cv-sources" style="margin: 0 0 22px;">
+      <span class="cv-src ev-measured">Measured — observed in tests/real packs</span>
+      <span class="cv-src ev-hypothesis">Hypothesis — plausible, not benchmark-derived</span>
+      <span class="cv-src ev-unknown">Unknown — P0.1 must measure</span>
+      <span class="cv-src ev-rejected">Rejected — claim struck</span>
+    </div>
+
+    <div class="ev-table">
+      <div class="ev-row head"><span>Claim / feature</span><span>Evidence</span><span>Verdict</span><span>Note</span></div>
+
+      <div class="ev-row">
+        <span class="ev-name">Fewer tokens than JSON<small>interning + schema-once</small></span>
+        <span class="ev-badge ev-measured">Measured</span>
+        <span class="ev-badge ev-measured">Keep</span>
+        <span class="ev-note">The one genuinely measured property — real packs decode smaller than equivalent JSON. The specific "81%" was a sample, not a universal figure.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">SHA-256 trailer integrity<small>truncation / tamper detection</small></span>
+        <span class="ev-badge ev-measured">Measured</span>
+        <span class="ev-badge ev-measured">Keep</span>
+        <span class="ev-note">Tests confirm truncated and tampered packs are rejected — when a trailer is present. Making it mandatory for v0.2 is a Gate-0 fix.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Delimiter escaping stops column-split injection<small><code>\t \n \\</code></small></span>
+        <span class="ev-badge ev-measured">Measured</span>
+        <span class="ev-badge ev-measured">Keep</span>
+        <span class="ev-note">Shipped and real. This — not XML wrapping — is the load-bearing injection defense at the grammar level.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Retrieval accuracy vs JSON / Markdown-KV<small>the core claim</small></span>
+        <span class="ev-badge ev-unknown">Unknown</span>
+        <span class="ev-badge ev-unknown">Gate 2</span>
+        <span class="ev-note">Never measured on a code map. The borrowed 44–61% figures are from a synthetic-record task on a different model. This is the question P0.1 exists to answer.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">In-band legend cancels the density penalty<small>the central bet</small></span>
+        <span class="ev-badge ev-hypothesis">Hypothesis</span>
+        <span class="ev-badge ev-unknown">Gate 2</span>
+        <span class="ev-note">Evidence-informed (explicit metadata helped on other tabular tasks) but the legend is already spent; whether it nets positive on .pack is unproven.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Incident edge ordering helps traversal<small>53.8% vs 19.8% (borrowed)</small></span>
+        <span class="ev-badge ev-hypothesis">Hypothesis</span>
+        <span class="ev-badge ev-hypothesis">Rework</span>
+        <span class="ev-note">The number is from synthetic graph-QA with bare-integer nodes — not .pack, which already groups edges by source. Codify the ordering as a canonicalization rule; drop the accuracy claim.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Communities table aids reasoning<small>GraphRAG-style</small></span>
+        <span class="ev-badge ev-hypothesis">Hypothesis</span>
+        <span class="ev-badge ev-hypothesis">Rework</span>
+        <span class="ev-note">Structure verified defensible (4 communities cover 50% of the real graph). But the non-deterministic <code>summary</code> column must be cut from the hashed wire, and the heuristic label needs an exact tie-break.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Explicit datatypes raise accuracy<small>"+20%" (borrowed)</small></span>
+        <span class="ev-badge ev-hypothesis">Hypothesis</span>
+        <span class="ev-badge ev-hypothesis">Rework</span>
+        <span class="ev-note">Single-model generic-tabular figure, double-counted against the already-mandatory legend. Scope <code>; types</code> to storage-form specials; gate the rest on a measured delta.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">SCIP monikers shrink diffs<small>stable symbol identity</small></span>
+        <span class="ev-badge ev-hypothesis">Hypothesis</span>
+        <span class="ev-badge ev-unknown">Gate 4</span>
+        <span class="ev-note">Sound by construction (stable ids churn less), but the actual benefit is unmeasured because the chain it serves does not exist yet.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Prompt-cache economics (the moat)<small>"99% cache hits"</small></span>
+        <span class="ev-badge ev-unknown">Unknown</span>
+        <span class="ev-badge ev-unknown">Gate 4</span>
+        <span class="ev-note">Real moat in principle, but the ~1024-token cache floor and ~5-min TTL are unpriced — the win can be negative for small or intermittent packs. Needs real billing numbers, not a "99%".</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Chain coalescing thresholds<small>"≤5 diffs / 20%"</small></span>
+        <span class="ev-badge ev-unknown">Unknown</span>
+        <span class="ev-badge ev-hypothesis">Rework</span>
+        <span class="ev-note">Both 5 and 8 are guesses; file-count is a weak proxy. Emitter policy, not wire — set by the benchmark's chain-depth curve.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Byte-determinism ("same input → same bytes")<small>foundation of the moat</small></span>
+        <span class="ev-badge ev-unknown">Unknown</span>
+        <span class="ev-badge ev-rejected">At risk</span>
+        <span class="ev-note">Assumed, never tested. Float formatting, dict-key order, and Windows-vs-POSIX paths are unpinned with zero conformance test. Prove it before selling the cache moat.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Lite monikers as chain identity<small>heuristic matching</small></span>
+        <span class="ev-badge ev-rejected">Rejected</span>
+        <span class="ev-badge ev-rejected">Hints only</span>
+        <span class="ev-note">A probabilistic match cannot key a delete/replace — one false match silently mutates the wrong row. Demote to non-authoritative hints; uncertainty → delete-plus-add.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">XML wrapping = injection "shield"<small>"Bulletproof" / "shielded"</small></span>
+        <span class="ev-badge ev-rejected">Rejected</span>
+        <span class="ev-badge ev-rejected">Strike</span>
+        <span class="ev-note">Security theater — a cell can contain a closing tag. XML is a prompt-organization aid only. Real defense: tool-side decode + instruction-taint + treat every cell as data.</span>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-name">Process boundary "escapes" AGPL<small>integration mitigation</small></span>
+        <span class="ev-badge ev-rejected">Rejected</span>
+        <span class="ev-badge ev-rejected">Strike</span>
+        <span class="ev-note">An unsettled legal conclusion stated as engineering fact. State the architecture only; defer the copyleft question to qualified counsel.</span>
+      </div>
+    </div>
+
+    <div class="calc-disclaimer">
+      <strong>Why a matrix, not a calculator:</strong> a slider that adds "+15% for incident ordering, +12% for communities" and caps at 92% manufactures precision the project has not earned. Per the R5 claims policy, no unmeasured number ships as fact on a public surface. When P0.1 produces measured deltas with confidence intervals, the <em>Unknown</em> and <em>Hypothesis</em> rows here become <em>Measured</em> — with ranges, not single digits.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <span>© 2026 Aditya Mishra · FactsPack Developer</span>
+      <span>License: AGPL-3.0</span>
+      <span>Proposed Standard: v0.2 ➔ v0.3</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // theme toggler
+  const toggle = document.getElementById('theme-toggle');
+  toggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    if (current === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+      toggle.textContent = '☀️ Light Mode';
+      localStorage.setItem('fp-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      toggle.textContent = '🌙 Dark Mode';
+      localStorage.setItem('fp-theme', 'light');
+    }
+  });
+
+  // load saved theme
+  const savedTheme = localStorage.getItem('fp-theme');
+  if (savedTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    toggle.textContent = '🌙 Dark Mode';
+  } else if (savedTheme === 'dark') {
+    document.documentElement.removeAttribute('data-theme');
+    toggle.textContent = '☀️ Light Mode';
+  }
+
+  // The interactive impact calculator was removed in the 2026-06-13 cross-verification
+  // update. It rendered unmeasured feature weights (+15/+12/+10/+5, capped at 92%) and a
+  // "Bulletproof" security state as precise facts — a violation of the R5 claims policy.
+  // It is replaced by the static, honest evidence-state matrix in the markup above, which
+  // needs no scripting. Theme toggling is the only client behavior on this page.
+</script>
+
+</body>
+</html>

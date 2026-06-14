@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FactsPack Final Review · Next Steps, Revised Edition</title>
+<meta name="description" content="The latest tri-agent verdict on FactsPack: verified v0.2 contract defects, evidence states, execution gates, and the measured path toward v0.3 and agent-v5.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23262017'/%3E%3Ctext x='32' y='47' font-family='Georgia,serif' font-size='42' font-weight='700' fill='%23c8442e' text-anchor='middle'%3E%23%3C/text%3E%3C/svg%3E">
+<script>
+  /* theme init: whitelist only, default to system. shared family key fp-theme. */
+  (function () {
+    try {
+      var t = localStorage.getItem('fp-theme');
+      if (t !== 'light' && t !== 'dark') {
+        t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* private mode: stay light */ }
+  })();
+</script>
+<style>
+  /* ============================================================
+     FactsPack · Standard Review, Edition II
+     Editorial specification dossier. Light-first, true dark.
+     OKLCH throughout; neutrals tinted toward the ink hue.
+     ============================================================ */
+
+  :root {
+    color-scheme: light;
+    /* paper + ink (light) */
+    --paper:      oklch(97.5% 0.008 85);
+    --paper-2:    oklch(99.2% 0.006 85);
+    --paper-sunk: oklch(93.5% 0.013 80);
+    --ink:        oklch(24% 0.022 265);
+    --ink-2:      oklch(40% 0.02 265);
+    --ink-faint:  oklch(54% 0.016 265);
+    --rule:       oklch(86% 0.012 80);
+    --rule-2:     oklch(74% 0.02 75);
+    --signal:     oklch(50% 0.19 26);   /* redline vermilion */
+    --signal-ink: oklch(44% 0.2 26);
+    /* signal palette: severities + evidence states (AA on paper) */
+    --c-critical: oklch(47% 0.2 24);
+    --c-high:     oklch(50% 0.13 62);
+    --c-medium:   oklch(47% 0.14 250);
+    --c-measured: oklch(44% 0.13 152);
+    --c-reported: oklch(48% 0.12 214);
+    --c-hyp:      oklch(50% 0.13 62);
+    --c-unknown:  oklch(47% 0.14 250);
+    --c-reject:   oklch(47% 0.2 24);
+    --shadow:     0 1px 0 oklch(80% 0.02 80 / 0.6), 0 18px 40px oklch(40% 0.04 80 / 0.10);
+
+    --serif:  "Sitka Heading", "Hoefler Text", "Iowan Old Style", "Palatino Linotype", Palatino, Cambria, Georgia, "Times New Roman", serif;
+    --text:   "Sitka Text", "Charter", "Iowan Old Style", "Palatino Linotype", Palatino, Cambria, Georgia, serif;
+    --mono:   "Cascadia Code", "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+    --measure: 68ch;
+    --gutter: clamp(1.1rem, 4vw, 3rem);
+    --rail: clamp(0px, 8vw, 8.5rem);
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --paper:      oklch(19% 0.018 265);
+    --paper-2:    oklch(23% 0.02 265);
+    --paper-sunk: oklch(15.5% 0.016 265);
+    --ink:        oklch(91% 0.018 82);
+    --ink-2:      oklch(76% 0.018 82);
+    --ink-faint:  oklch(60% 0.02 265);
+    --rule:       oklch(33% 0.02 265);
+    --rule-2:     oklch(46% 0.03 265);
+    --signal:     oklch(66% 0.16 30);
+    --signal-ink: oklch(72% 0.15 32);
+    --c-critical: oklch(70% 0.17 24);
+    --c-high:     oklch(79% 0.12 66);
+    --c-medium:   oklch(73% 0.12 250);
+    --c-measured: oklch(77% 0.13 152);
+    --c-reported: oklch(76% 0.11 214);
+    --c-hyp:      oklch(79% 0.12 66);
+    --c-unknown:  oklch(73% 0.12 250);
+    --c-reject:   oklch(72% 0.16 24);
+    --shadow:     0 1px 0 oklch(30% 0.02 265 / 0.8), 0 22px 50px oklch(5% 0.02 265 / 0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(120% 80% at 100% -10%, color-mix(in oklch, var(--signal) 7%, transparent), transparent 55%),
+      radial-gradient(90% 60% at -10% 8%, color-mix(in oklch, var(--c-medium) 6%, transparent), transparent 50%),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--text);
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: var(--signal-ink); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+  a:hover { color: var(--ink); }
+  code, .mono, kbd { font-family: var(--mono); }
+  ::selection { background: color-mix(in oklch, var(--signal) 26%, transparent); }
+
+  .skip {
+    position: fixed; top: 0.6rem; left: 0.6rem; z-index: 60;
+    background: var(--ink); color: var(--paper); padding: 0.6rem 0.9rem;
+    transform: translateY(-160%); transition: transform .18s;
+    font-family: var(--mono); font-size: 0.8rem; border-radius: 4px;
+  }
+  .skip:focus { transform: none; }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---- shell ---- */
+  .sheet {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+  }
+  .col {
+    display: grid;
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+    gap: clamp(0px, 3vw, 2.4rem);
+  }
+  .col > * { min-width: 0; }
+  .col > .rail { grid-column: 1; }
+  .col > .body { grid-column: 2; width: 100%; max-width: 54rem; min-width: 0; }
+  @media (max-width: 760px) { .col { grid-template-columns: 1fr; } .col > .rail, .col > .body { grid-column: 1; } }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.6rem var(--gutter);
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+  }
+  .wordmark { display: flex; align-items: baseline; gap: 0.6rem; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; color: var(--ink-faint); text-transform: uppercase; }
+  .wordmark b { color: var(--ink); }
+  .wordmark .hash { color: var(--signal); font-weight: 700; font-size: 1rem; }
+  .topbar nav { display: flex; align-items: center; gap: 0.2rem; }
+  .topbar nav a { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.04em; color: var(--ink-faint); text-decoration: none; padding: 0.4rem 0.55rem; border-radius: 5px; }
+  .topbar nav a:hover { color: var(--ink); background: var(--paper-sunk); }
+  @media (max-width: 680px) { .topbar nav a.hideable { display: none; } }
+  .toggle {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.05em;
+    background: var(--paper-2); color: var(--ink-2);
+    border: 1px solid var(--rule-2); border-radius: 6px;
+    padding: 0.42rem 0.7rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;
+    transition: border-color .15s, color .15s;
+  }
+  .toggle:hover { color: var(--ink); border-color: var(--signal); }
+  .toggle .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 3px color-mix(in oklch, var(--signal) 18%, transparent); }
+
+  /* ---- masthead ---- */
+  .masthead { padding: clamp(2.6rem, 7vw, 6rem) 0 clamp(1.6rem, 4vw, 3rem); border-bottom: 2px solid var(--ink); }
+  .eyebrow { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--signal); display: flex; align-items: center; gap: 0.8rem; }
+  .eyebrow::after { content: ""; height: 1px; flex: 1; background: var(--rule-2); max-width: 18rem; }
+  h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(3rem, 11vw, 8.5rem); line-height: 0.92; letter-spacing: -0.02em;
+    margin: 1.4rem 0 0; color: var(--ink);
+  }
+  h1 .rule-word { font-style: italic; color: var(--signal); }
+  .dek { font-size: clamp(1.05rem, 1.7vw, 1.32rem); color: var(--ink-2); max-width: 46ch; margin: 1.6rem 0 0; line-height: 1.5; }
+  .masthead-meta { display: flex; flex-wrap: wrap; gap: 0 2rem; margin-top: 2.4rem; font-family: var(--mono); font-size: 0.76rem; color: var(--ink-faint); }
+  .masthead-meta div { padding: 0.5rem 0; border-top: 1px solid var(--rule); }
+  .masthead-meta b { color: var(--ink); font-weight: 600; }
+
+  /* ---- section scaffolding ---- */
+  section { padding: clamp(3rem, 7vw, 6rem) 0; border-bottom: 1px solid var(--rule); }
+  .kicker { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--signal); }
+  .folio { font-family: var(--mono); font-size: 0.82rem; color: var(--ink-faint); letter-spacing: 0.04em; }
+  .rail .sticky { position: sticky; top: 5rem; }
+  @media (max-width: 760px) { .rail { margin-bottom: 1.2rem; } .rail .sticky { position: static; } }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.9rem, 4.2vw, 3.2rem); line-height: 1.02; letter-spacing: -0.018em; margin: 0.3rem 0 0; color: var(--ink); }
+  h3 { font-family: var(--serif); font-weight: 600; font-size: 1.32rem; letter-spacing: -0.01em; margin: 2rem 0 0.5rem; }
+  .lede { font-size: 1.12rem; color: var(--ink-2); margin: 1rem 0 0; max-width: var(--measure); }
+  p { max-width: var(--measure); }
+  .body > p { margin: 1rem 0; }
+  strong { color: var(--ink); font-weight: 600; }
+  em { font-style: italic; }
+
+  /* ---- verdict panel ---- */
+  .verdict {
+    margin-top: 1.8rem; padding: clamp(1.4rem, 3vw, 2.2rem);
+    background: var(--paper-2); border: 1px solid var(--rule-2); border-radius: 12px; box-shadow: var(--shadow);
+  }
+  .verdict .stamp { font-family: var(--serif); font-style: italic; font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.18; letter-spacing: -0.01em; margin: 0; color: var(--ink); }
+  .verdict p { margin: 1rem 0 0; color: var(--ink-2); }
+  .agents { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.4rem; }
+  .agents span { font-family: var(--mono); font-size: 0.72rem; padding: 0.35rem 0.7rem; border: 1px solid var(--rule-2); border-radius: 999px; color: var(--ink-faint); }
+  .agents span b { color: var(--ink); }
+
+  .decision-board { margin-top: 1.2rem; border-block: 1px solid var(--rule-2); }
+  .decision-row { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .decision-row:last-child { border-bottom: 0; }
+  .decision-key { font-family: var(--mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .decision-key.go { color: var(--c-measured); }
+  .decision-key.stop { color: var(--c-critical); }
+  .decision-key.later { color: var(--c-unknown); }
+  .decision-row p { margin: 0; color: var(--ink-2); }
+  @media (max-width: 520px) { .decision-row { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+  /* ---- gate flow ---- */
+  .gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.7rem; margin-top: 2rem; counter-reset: gate; }
+  .gate { position: relative; padding: 1.1rem 1.1rem 1.2rem; border: 1px solid var(--rule-2); border-radius: 10px; background: var(--paper-2); }
+  .gate.now { border-color: var(--signal); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--signal) 35%, transparent); }
+  .gate .n { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+  .gate.now .n { color: var(--signal); }
+  .gate h4 { font-family: var(--serif); font-size: 1.05rem; margin: 0.4rem 0 0.35rem; }
+  .gate p { font-size: 0.86rem; color: var(--ink-2); margin: 0; }
+
+  .readiness { margin-top: 1.7rem; border: 1px solid var(--rule-2); border-radius: 10px; overflow: hidden; background: var(--paper-2); }
+  .readiness-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding: 0.9rem 1rem; border-bottom: 1px solid var(--rule); background: var(--paper-sunk); }
+  .readiness-head h3 { margin: 0; font-size: 1rem; }
+  .readiness-head span { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  .checklist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .check-item { display: grid; grid-template-columns: auto 1fr; gap: 0.65rem; align-items: start; padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule); color: var(--ink-2); font-size: 0.88rem; cursor: pointer; }
+  .check-item:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .check-item input { margin-top: 0.15rem; accent-color: var(--signal); }
+  .check-item b { color: var(--ink); }
+  .readiness-outcome { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.8rem; padding: 0.9rem 1rem; font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2); }
+  .reset-checks { border: 0; background: transparent; color: var(--signal); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; }
+  @media (max-width: 680px) { .checklist { grid-template-columns: 1fr; } .check-item:nth-child(odd) { border-right: 0; } .readiness-head { align-items: flex-start; flex-direction: column; gap: 0.2rem; } }
+
+  /* ---- exhibit (real bytes) ---- */
+  figure { margin: 1.8rem 0 0; width: 100%; max-width: 100%; min-width: 0; }
+  .exhibit { width: 100%; max-width: 100%; min-width: 0; border: 1px solid var(--rule-2); border-radius: 10px; overflow: hidden; background: var(--paper-sunk); box-shadow: var(--shadow); }
+  .exhibit .cap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.35rem 1rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); }
+  .exhibit pre { margin: 0; padding: 1.2rem 1.1rem; overflow-x: auto; font-family: var(--mono); font-size: 0.84rem; line-height: 1.9; color: var(--ink-2); }
+  .exhibit .h { color: var(--c-medium); }
+  .exhibit .d { color: var(--c-measured); }
+  .exhibit .s { color: var(--signal); }
+  .exhibit .t { color: var(--ink-faint); }
+  .exhibit .note { color: var(--ink-faint); font-style: italic; }
+  .exhibit .bad { color: var(--c-critical); text-decoration: underline wavy; text-underline-offset: 0.22em; }
+  figcaption { font-size: 0.92rem; color: var(--ink-faint); margin-top: 0.7rem; max-width: var(--measure); }
+  figcaption b { color: var(--ink-2); }
+
+  /* ---- filter controls ---- */
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 1.6rem 0 0.4rem; }
+  .controls .lbl { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-right: 0.4rem; }
+  .chip {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.03em;
+    padding: 0.34rem 0.7rem; border: 1px solid var(--rule-2); border-radius: 999px;
+    background: transparent; color: var(--ink-faint); cursor: pointer; transition: all .14s;
+  }
+  .chip:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .search-input {
+    min-width: 13rem; flex: 1 1 13rem; max-width: 22rem; margin-left: 0.35rem;
+    padding: 0.42rem 0.7rem; border: 1px solid var(--rule-2); border-radius: 7px;
+    background: var(--paper-2); color: var(--ink); font: 0.78rem/1.2 var(--mono);
+  }
+  .search-input::placeholder { color: var(--ink-faint); }
+  .search-input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .count { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-faint); margin-left: auto; }
+
+  /* ---- findings ledger ---- */
+  .ledger { margin-top: 1.2rem; border-top: 1px solid var(--rule); }
+  .entry { border-bottom: 1px solid var(--rule); }
+  .entry[hidden] { display: none; }
+  .entry > summary {
+    list-style: none; cursor: pointer; display: grid;
+    grid-template-columns: 2.6rem 1fr auto; gap: 0.9rem; align-items: baseline;
+    padding: 1.05rem 0.4rem; transition: background .14s;
+  }
+  .entry > summary::-webkit-details-marker { display: none; }
+  .entry > summary:hover { background: var(--paper-sunk); }
+  .entry .idx { font-family: var(--mono); font-size: 0.82rem; color: var(--signal); }
+  .entry .ttl { font-family: var(--serif); font-size: 1.16rem; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; }
+  .entry .meta { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .tag { font-family: var(--mono); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.22rem 0.5rem; border-radius: 5px; border: 1px solid currentColor; white-space: nowrap; }
+  .tag.critical { color: var(--c-critical); background: color-mix(in oklch, var(--c-critical) 11%, transparent); }
+  .tag.high { color: var(--c-high); background: color-mix(in oklch, var(--c-high) 12%, transparent); }
+  .tag.medium { color: var(--c-medium); background: color-mix(in oklch, var(--c-medium) 11%, transparent); }
+  .src { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-faint); }
+  .entry .open-mark { font-family: var(--mono); color: var(--ink-faint); align-self: center; }
+  .entry[open] .open-mark { color: var(--signal); }
+  .entry .detail { padding: 0 0.4rem 1.5rem 3.5rem; max-width: var(--measure); }
+  @media (max-width: 560px) { .entry > summary { grid-template-columns: 1.8rem 1fr; } .entry .meta { grid-column: 1 / -1; justify-content: flex-start; padding-left: 1.8rem; } .entry .open-mark { display: none; } .entry .detail { padding-left: 1.8rem; } }
+  .entry .detail p { margin: 0.2rem 0 0; color: var(--ink-2); }
+  .entry .fix { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px dashed var(--rule-2); font-size: 0.96rem; }
+  .entry .fix b { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-measured); display: block; margin-bottom: 0.2rem; }
+
+  /* ---- evidence matrix ---- */
+  .matrix { margin-top: 1.2rem; border: 1px solid var(--rule-2); border-radius: 10px; overflow: hidden; }
+  .mrow { display: grid; grid-template-columns: minmax(0, 1.3fr) 7.5rem 7rem minmax(0, 1.7fr); gap: 1rem; padding: 0.95rem 1.1rem; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .mrow:last-child { border-bottom: 0; }
+  .mrow[hidden] { display: none; }
+  .mrow.h { background: var(--paper-sunk); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-faint); }
+  .mrow .claim { font-weight: 600; color: var(--ink); }
+  .mrow .claim small { display: block; font-weight: 400; font-family: var(--mono); font-size: 0.7rem; color: var(--ink-faint); margin-top: 0.2rem; }
+  .state { font-family: var(--mono); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.24rem 0.5rem; border-radius: 5px; border: 1px solid currentColor; width: fit-content; height: fit-content; }
+  .state.measured { color: var(--c-measured); background: color-mix(in oklch, var(--c-measured) 12%, transparent); }
+  .state.reported { color: var(--c-reported); background: color-mix(in oklch, var(--c-reported) 12%, transparent); }
+  .state.hypothesis { color: var(--c-hyp); background: color-mix(in oklch, var(--c-hyp) 12%, transparent); }
+  .state.unknown { color: var(--c-unknown); background: color-mix(in oklch, var(--c-unknown) 11%, transparent); }
+  .state.rejected { color: var(--c-reject); background: color-mix(in oklch, var(--c-reject) 11%, transparent); }
+  .mrow .verdict { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2); }
+  .mrow .mnote { font-size: 0.9rem; color: var(--ink-2); }
+  .mrow .mnote code { font-size: 0.82rem; }
+  @media (max-width: 720px) { .mrow { grid-template-columns: 1fr auto; gap: 0.5rem 0.8rem; } .mrow .verdict { text-align: right; } .mrow .mnote { grid-column: 1 / -1; } .mrow.h { display: none; } }
+
+  /* ---- roadmap ---- */
+  .phase { margin-top: 1.6rem; padding-top: 1.4rem; border-top: 1px solid var(--rule); }
+  .phase:first-of-type { border-top: 0; }
+  .phase .ptag { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--signal); }
+  .phase.muted .ptag { color: var(--ink-faint); }
+  .phase h3 { margin-top: 0.3rem; }
+  .phase ul { list-style: none; padding: 0; margin: 0.8rem 0 0; }
+  .phase li { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.6rem; padding: 0.5rem 0; border-top: 1px solid var(--rule); font-size: 0.98rem; color: var(--ink-2); max-width: var(--measure); }
+  .phase li .mk { font-family: var(--mono); color: var(--ink-faint); }
+  .phase li.req .mk { color: var(--signal); }
+  .phase li b { color: var(--ink); }
+  .note-line { margin-top: 1rem; font-family: var(--mono); font-size: 0.8rem; color: var(--ink-faint); max-width: var(--measure); }
+
+  /* ---- consensus ---- */
+  .rcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.7rem; margin-top: 1.4rem; }
+  .rcard { padding: 1rem 1.1rem; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper-2); }
+  .rcard .rid { font-family: var(--mono); font-size: 0.72rem; font-weight: 700; color: var(--signal); }
+  .rcard h4 { font-family: var(--serif); font-size: 1.04rem; margin: 0.3rem 0 0.4rem; }
+  .rcard p { font-size: 0.88rem; color: var(--ink-2); margin: 0; }
+
+  .source-ledger { margin-top: 1.4rem; border-top: 1px solid var(--rule-2); }
+  .source-row { display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .source-agent { font-family: var(--mono); font-size: 0.72rem; font-weight: 700; color: var(--signal); }
+  .source-copy { color: var(--ink-2); font-size: 0.92rem; }
+  .source-time { font-family: var(--mono); font-size: 0.66rem; color: var(--ink-faint); white-space: nowrap; }
+  @media (max-width: 620px) { .source-row { grid-template-columns: 1fr; gap: 0.18rem; } .source-time { white-space: normal; } }
+
+  /* ---- colophon ---- */
+  .colophon { background: var(--paper-sunk); }
+  .colophon .body { font-size: 0.98rem; }
+  .colophon dl { display: grid; grid-template-columns: 8rem 1fr; gap: 0.5rem 1.4rem; margin: 1.4rem 0 0; }
+  .colophon dt { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); padding-top: 0.15rem; }
+  .colophon dd { margin: 0; color: var(--ink-2); }
+  @media (max-width: 560px) { .colophon dl { grid-template-columns: 1fr; gap: 0.1rem 0; } .colophon dd { margin-bottom: 0.8rem; } }
+
+  footer { padding: 2.4rem var(--gutter); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; font-family: var(--mono); font-size: 0.74rem; color: var(--ink-faint); }
+  footer b { color: var(--ink-2); }
+
+  /* ---- §Δ fixes ledger: long code paths must wrap on narrow screens ---- */
+  #fixes code { overflow-wrap: anywhere; }
+
+  /* ---- motion: one orchestrated load ---- */
+  .reveal { opacity: 0; transform: translateY(12px); animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; animation: none; } }
+
+  @media print {
+    :root {
+      color-scheme: light;
+      --paper: oklch(99% 0.005 85);
+      --paper-2: oklch(99% 0.004 85);
+      --paper-sunk: oklch(95% 0.01 80);
+      --ink: oklch(20% 0.02 265);
+      --ink-2: oklch(34% 0.018 265);
+      --ink-faint: oklch(46% 0.016 265);
+      --rule: oklch(82% 0.012 80);
+      --rule-2: oklch(68% 0.02 75);
+    }
+    body { background: var(--paper); }
+    .topbar, .controls, .skip { display: none !important; }
+    .masthead { padding-top: 1.5rem; }
+    section { break-inside: avoid; padding-block: 2rem; }
+    details { break-inside: avoid; }
+    details > * { display: block; }
+    .reveal { opacity: 1; transform: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the review</a>
+
+<div class="topbar">
+  <div class="wordmark"><span class="hash">#</span> <b>FactsPack</b> · Standard Review</div>
+  <nav>
+    <a class="hideable" href="#verdict">Verdict</a>
+    <a class="hideable" href="#fixes">v0.2a fixes</a>
+    <a class="hideable" href="#findings">Findings</a>
+    <a class="hideable" href="#roadmap">Next steps</a>
+    <a class="hideable" href="#agents-sec">Sources</a>
+    <a href="next-steps.html">Prior edition</a>
+    <button class="toggle" id="theme" type="button" aria-label="Switch between light and dark">
+      <span class="dot" aria-hidden="true"></span><span id="theme-label">Dark</span>
+    </button>
+  </nav>
+</div>
+
+<main id="main">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="masthead">
+    <div class="sheet">
+      <div class="eyebrow">FactsPack v0.3 / agent-v5 · Tri-agent final review · 2026-06-13</div>
+      <h1>Repair. <span class="rule-word">Prove.</span> Extend.</h1>
+      <p class="dek">The latest Claude, Antigravity, and Codex validations converge on one decision: FactsPack is viable, but feature expansion waits until the v0.2 contract is repaired and independently proven.</p>
+      <div class="masthead-meta">
+        <div><b>Validations</b><br>CC + AG + OC</div>
+        <div><b>Source checks</b><br>Three review paths + raw bytes</div>
+        <div><b>Decision</b><br>GO Gate 0 / NO-GO features</div>
+        <div><b>Status</b><br>Research verdict, not canonical</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== §00 VERDICT ===================== -->
+  <section id="verdict">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§00</div><div class="kicker">Verdict</div></div></div>
+      <div class="body">
+        <h2 class="reveal">Viable format. No-go for feature expansion.</h2>
+        <div class="verdict reveal">
+          <p class="stamp">Repair and prove v0.2 before extending it.</p>
+          <p>All three signed validation paths confirmed four contract defects: invalid canonical examples, contradictory diff row counts, an optional strict trailer, and a validator that does not prove losslessness. They also converged on determinism, resource limits, and encoder parity as the next hardening gate. The roadmap remains useful only in this dependency order.</p>
+          <div class="decision-board" aria-label="Final decision summary">
+            <div class="decision-row"><span class="decision-key go">Go now</span><p>Local Gate 0 contract repair, conformance fixtures, governance reconciliation, and private benchmark preparation.</p></div>
+            <div class="decision-row"><span class="decision-key stop">No-go</span><p>Normative Wave-1 features, the agent-v5 chain, public benchmark claims, publication, deployment, or promotion of this page to canonical status.</p></div>
+            <div class="decision-row"><span class="decision-key later">Conditional</span><p>Feature work resumes only after byte-exact conformance and private P0.1 evidence clear their gates.</p></div>
+          </div>
+          <div class="agents">
+            <span><b>Claude / CC</b> project-state validation</span>
+            <span><b>Antigravity / AG</b> cross-verification</span>
+            <span><b>Codex / OC</b> latest-files validation</span>
+            <span>final synthesis signed OC, not a joint signature</span>
+          </div>
+        </div>
+
+        <h3>Dependency order, not optimism</h3>
+        <p>Every stage depends on the one before it. The chain, the unique economic moat, comes last: it cannot be built on a contract that two conformant readers resolve differently.</p>
+        <div class="gates reveal">
+          <div class="gate now"><div class="n">Gate 0 · now</div><h4>Repair the contract</h4><p>Fix the verified bugs below. Freeze new normative tables until the wire is self-consistent and determinism is proven, not assumed.</p></div>
+          <div class="gate"><div class="n">Gate 1</div><h4>Conformance + hardening</h4><p>Independent byte-exact oracle, cross-platform determinism, bounded decoding, and browser-to-reference encoder parity.</p></div>
+          <div class="gate"><div class="n">Gate 2 · P0.1</div><h4>Measure the core claim</h4><p>A private, statistical benchmark: does interning plus legend beat JSON and Markdown-KV on a real code map? Publication is owner-gated.</p></div>
+          <div class="gate"><div class="n">Gate 3</div><h4>Additive features</h4><p>Admit Wave-1 items one at a time, each behind a measured delta that clears a pre-registered confidence interval.</p></div>
+          <div class="gate"><div class="n">Gate 4</div><h4>Identity, then chains</h4><p>Prove stable, deterministic symbol identity. Only then build the master and diff chain on top of it.</p></div>
+        </div>
+
+        <div class="readiness reveal" aria-labelledby="readiness-title">
+          <div class="readiness-head"><h3 id="readiness-title">Gate-readiness checklist</h3><span>Local planning aid, not proof</span></div>
+          <div class="checklist">
+            <label class="check-item"><input type="checkbox" data-gate-check="examples"><span><b>Examples:</b> normative bytes decode and re-encode exactly.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="counts"><span><b>Counts:</b> master and diff semantics are explicit and tested.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="profiles"><span><b>Profiles:</b> strict and legacy behavior cannot be confused.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="oracle"><span><b>Oracle:</b> independent lossless round-trip tests pass.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="determinism"><span><b>Determinism:</b> identical bytes across supported platforms.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="limits"><span><b>Limits:</b> bounded decoding survives the adversarial corpus.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="parity"><span><b>Parity:</b> browser and reference encoders match byte-for-byte.</span></label>
+            <label class="check-item"><input type="checkbox" data-gate-check="benchmark"><span><b>P0.1:</b> private benchmark reproduces with checked-in inputs.</span></label>
+          </div>
+          <div class="readiness-outcome"><span id="readiness-outcome" aria-live="polite">0 of 8 marked. Feature expansion remains NO-GO.</span><button class="reset-checks" id="reset-checks" type="button">Reset checklist</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §Δ v0.2a FIXES APPLIED ===================== -->
+  <section id="fixes">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§Δ</div><div class="kicker">v0.2a fixes</div></div></div>
+      <div class="body">
+        <h2 class="reveal">Gate 0 is repaired — every fix, with its bytes</h2>
+        <p class="lede reveal">Since this review was written, the <b>v0.2a</b> contract-repair release landed the five Gate&nbsp;0 items, hardened the shipped surfaces, and fixed the two issues an independent code review caught. Each fix below is proven by a runnable test, not a claim, and names <em>where</em> it was required.</p>
+
+        <div class="verdict reveal">
+          <p class="stamp">Gate 0: repaired and proven. The feature release stays gated.</p>
+          <p><b>Green as built:</b> factstack&nbsp;175 · emit&nbsp;64 · mcp-server&nbsp;18 · facts-pack&nbsp;9&nbsp;suites — all passing. <b>Gate&nbsp;1 is complete:</b> encoder byte-parity and full-pack determinism both closed (the converter emits a byte-identical pack for identical input). Only Gate&nbsp;2 (the private, owner-gated P0.1 benchmark) remains before any v0.3 feature ships.</p>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Gate 0 · contract repair · DONE</div>
+          <h3>The four defects + the stale inventory</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>U1 · Valid examples.</b> Byte-exact tab fixtures (<code>test/fixtures/*.pack</code>); the spec's §6/§7 examples re-rendered with a visible <code>⇥</code> marker and fixture pointers. <em>Was: <code>FACTSPACK.md</code> examples used spaces. Verified by <code>grounding&nbsp;01a–01e</code>, <code>conformance</code>, <code>build-fixtures</code>.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>U2 · Count semantics.</b> Three distinct counts; the strict decoder enforces master <code>header == trailer</code>, the diff <code>0</code> sentinel bound to <code>kind=diff</code>, and kind-legal operations. <em>Was: the decoder never compared header vs trailer. Where: <code>factstack&nbsp;decode.ts/encode.ts</code>, <code>FACTSPACK.md&nbsp;§4.5</code>. Verified by <code>grounding&nbsp;02a–02c</code> + the <code>decode.test.ts</code> strict block.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>U3 · Strict + legacy profiles.</b> <code>decode()</code> is strict by default (trailer required, counts + kind enforced, resource ceilings); <code>decodeLegacy()</code> preserves pre-v0.2 tolerance. <em>Was: trailer integrity optional, no ceilings. Where: <code>factstack&nbsp;decode.ts/types.ts/index.ts</code>. Verified by <code>grounding&nbsp;03a–03c, 06a–06d</code> + <code>security</code>.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>U4 · Exact oracle.</b> An independent round-trip oracle with no shared normalization — it catches the literal <code>-</code>→U+2212 loss the old validator was blind to. <em>Where: <code>test/oracle.mjs</code>. Verified by <code>oracle.mjs</code>&nbsp;7/7 + <code>grounding&nbsp;04c/04d</code>.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Inventory.</b> The hard-coded "143&nbsp;tests" claim replaced with a reference to the vitest suite — no number to go stale. <em>Where: <code>FACTSPACK.md</code> (×2). Verified by <code>grounding&nbsp;08a</code>.</em></span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Hardening + code review · DONE</div>
+          <h3>Shipped-surface hardening and two review catches</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>XSS defense-in-depth.</b> The converter's <code>escHtml</code> now escapes all five HTML metacharacters (was <code>&amp;</code>/<code>&lt;</code> only). <em>Where: <code>docs/index.html:629</code>. Verified by <code>security&nbsp;HARDEN-escHtml</code> + Playwright <code>LH1–LH5</code>.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Review HIGH — diff round-trip.</b> <code>encodeIncremental()</code> now stamps <code>kind=diff</code> on the wire even when the caller omits it, so its own valid output is never misread as a master and rejected. <em>Where: <code>factstack&nbsp;encode.ts</code>. Verified by <code>decode.test.ts</code> "STAMPS kind=diff" + round-trip.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Review LOW — header strictness.</b> The decoder's <code>rowCount</code> field is now digits-only, rejecting <code>''</code>, <code>1e2</code>, and <code>0x10</code> (matching the <code>seq</code> field). <em>Where: <code>factstack&nbsp;decode.ts</code>. Verified by <code>decode.test.ts</code> "rejects empty or lenient rowCount".</em></span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Adversarial cross-verification · DONE</div>
+          <h3>An independent PoC pass + an architecture pass</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>Review MEDIUM — encoder/decoder asymmetry.</b> An independent adversarial pass (4 lenses, real PoCs; Codex was sandbox-blocked, so an agent panel substituted) found a legend line matching the reserved <code>; end …</code> trailer grammar was emitted verbatim, then re-read by the decoder as the trailer — encoder output its own decoder rejects. <em>Fixed: the encoder now refuses it. Where: <code>factstack encode.ts</code> (metaLines). Verified by <code>encode.test.ts</code> "collides with the reserved trailer".</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Review doc-gap — header strictness.</b> The <code>seq</code> field is now digits-only too, so the count fields are uniformly strict and the code comment is accurate. <em>Where: <code>factstack decode.ts</code>. Verified by <code>decode.test.ts</code> "rejects a non-integer or lenient seq".</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Architecture — shared test reporter.</b> The repeated tally/print/exit boilerplate across the three deferred-row suites moved to <code>test/_report.mjs</code>; each suite keeps its own states, glyphs, and grounded assertions. <em>Behaviour-preserving (byte-identical summaries).</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Architecture — locatable strict contract.</b> The v0.2a strict invariants were extracted into a named <code>enforceStrictV02()</code> in <code>decode.ts</code>. <em>Behaviour-preserving (vitest 156, all suites green).</em></span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Gate 1 + P0.1 scaffold · 2026-06-14 · DONE</div>
+          <h3>Cross-platform determinism + the benchmark scaffold</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>Path canonicalization (v0.3).</b> File paths normalize to POSIX <code>/</code> (<code>canonicalizePath</code>), numbers via a pinned formatter, filesystem walks sorted — so the same code map emits identical <em>body</em> bytes on Windows and POSIX. <em>Where: the web engine + <code>factstack canonicalize.ts</code>, spec §4.6. Verified: <code>conformance DET-2</code> (closed) + <code>canonicalize.test.ts</code>.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>P0.1 harness built.</b> <code>bench/p0.1/</code> encodes a code map as PACK / JSON / CSV / Markdown-KV and reports token cost now (PACK ≈ −57% vs JSON on the proxy tokenizer); retrieval accuracy is graded only when you wire a model. <em>No accuracy number is fabricated.</em></span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Integrity hardening · 2026-06-14 · DONE</div>
+          <h3>Zero-hash seal fallback eliminated; one SHA-256 everywhere</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>Zero-hash fallback removed.</b> When <code>crypto.subtle</code> was unavailable (a non-secure context) the web emitter sealed <code>sha256=000000000000</code> — an unverifiable trailer. <code>sealPack</code> now uses a synchronous pure-JS SHA-256 with no <code>crypto.subtle</code> dependency, so it always seals a real digest. <em>Where: <code>docs/index.html</code> (and the archived <code>v1.editorial</code>). Verified by <code>grounding ZH-a/ZH-b</code> + <code>security INT-3</code>: with <code>crypto.subtle</code> forced to throw, the trailer is still a real, decoder-accepted digest.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Dependency-free reference codec.</b> The codec's <code>node:crypto</code> import was replaced by the same pure-JS <code>sha256hex</code> (FIPS&nbsp;180-4); the vendored bundle now carries zero <code>node:crypto</code> imports. <em>Where: <code>factstack sha256.ts</code> → <code>test/factspack.bundle.mjs</code>. Verified: upstream vitest&nbsp;175 + a 2227-case fuzz of the shipped web hash vs <code>node:crypto</code> (every padding boundary, unicode, multi-block) — 0 mismatches.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Adversarial pass.</b> A 4-lens review (correctness · test-soundness · remnant-sweep · overclaim) cleared the change; its real catches were applied — the now-sync <code>sealPack</code> callers dropped their stale <code>await</code>, parity wording was scoped to the digest, and the round-trip proof's body slice was made length-exact.</span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Digest parity.</b> Browser emitter, reference codec, and <code>node:crypto</code> compute the <em>same trailer hash VALUE</em>. (Full encoder BODY parity landed in the next phase.)</span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Encoder unification · 2026-06-14 · DONE</div>
+          <h3>Browser converter and reference codec are now ONE encoder (byte parity)</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>One encoder, not two.</b> The converter's bespoke emitter (its own interning, escaping, sealing) was retired. It now calls the reference codec's <code>encodeAuto</code> — an automatic-economic interning <em>producer profile</em> (a planner over <code>encode()</code>) — esbuild-inlined into the single self-contained page. So the browser and the reference producer run the SAME encoder and agree on the wire (body AND digest). <em>Was: two independent emitters that could drift (Finding&nbsp;07).</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Byte parity, proven + guarded.</b> <code>test/parity.mjs</code> asserts the inlined encoder === the reference codec byte-for-byte (full body, not just the digest), and the converter's real output strict-decodes with its legend matching the on-wire schema. <code>conformance</code> adds <code>PARITY-byte</code>, <code>INLINE-DRIFT</code>, and <code>BUNDLE-DRIFT</code> so neither vendored copy of the encoder can silently diverge from source.</span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Adversarial pass + regressions fixed.</b> A 5-lens review (encodeAuto correctness · adapter fidelity · parity soundness · overclaim · regression) found and closed real gaps: a newline-in-column-name throw, a legend/schema casing mismatch, CRLF handling, and a missing bundle drift guard — each now covered by a test. <em>Placement note: the codec repo's tooling prunes new source files, so the <code>encodeAuto</code> profile is currently vendored in <code>facts-pack</code> over the codec's tracked <code>encode()</code>; byte-parity holds either way.</em></span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Full-pack determinism · 2026-06-14 · DONE</div>
+          <h3>Gate 1 closed: the same input yields a byte-identical pack</h3>
+          <ul>
+            <li class="req"><span class="mk">✓</span><span><b>Canonical-producer profile.</b> The converter no longer stamps a wall-clock into the header. In canonical mode <code>encodeAuto</code> pins <code>snapshotId</code> to a content digest of the data (a 12-hex SHA-256, itself a valid cache key) and drops the <code>generated</code> field, so two runs of the same paste emit a byte-identical pack, header included. <em>Where: <code>test/_encode-auto.ts</code>, <code>docs/index.html</code>, spec §4.6. Verified by <code>conformance DET-3</code> + <code>DET-3-id</code>.</em></span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Gate 1 complete.</b> Determinism (DET-1/2/3), resource ceilings, and encoder byte-parity all hold, so the determinism + hardening gate is done. What remains is Gate 2's owner-gated benchmark, which is not a conformance property.</span></li>
+          </ul>
+        </div>
+
+        <div class="phase muted">
+          <div class="ptag">Still gated — the v0.3 FEATURE release</div>
+          <h3>What is honestly NOT done yet</h3>
+          <ul>
+            <li><span class="mk">·</span><span><b>Gate 2 · the P0.1 measurement.</b> The harness is ready; the actual accuracy numbers need live model runs + owner approval — <b>they cannot be fabricated</b>.</span></li>
+            <li><span class="mk">·</span><span><b>Gate 3/4.</b> Wave-1 features and the agent-v5 chain stay frozen until P0.1 measures a benefit.</span></li>
+          </ul>
+          <p class="note-line">v0.2a was wire-compatible; v0.3 adds producer canonicalization (old packs still decode). The breaking changes still live in agent-v5 (Gate&nbsp;4).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §01 EXHIBIT ===================== -->
+  <section id="exhibit">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§01</div><div class="kicker">Exhibit A</div></div></div>
+      <div class="body">
+        <h2>The contract contradicts itself</h2>
+        <p class="lede">The format's first principle is "cite or refuse." For the one file type the chain emits on every commit, a diff, the integrity contract is a no-op. Here are the real bytes.</p>
+        <figure class="reveal">
+          <div class="exhibit">
+            <div class="cap"><span>incremental.pack</span><span>spaces shown; spec mandates tab 0x09</span></div>
+<pre><span class="h"># facts/0.1  symbols-v1  88e9a1b  0</span>   <span class="note">← header row-count 0 ("patch only")</span>
+<span class="d">@ F1=src/auth.ts</span>
+<span class="s">&amp; symbols  id  k  n  F  l</span>
+<span class="t">+ 6  fn  reset  F1  70</span>
+<span class="t">x 3</span>
+<span class="d">; end rows=2 tables=1 sha256=…</span>   <span class="note">← trailer says </span><span class="bad">2</span><span class="note">; header says </span><span class="bad">0</span></pre>
+          </div>
+          <figcaption><b>Two defects, verified against source.</b> The spec (§4.5) requires the trailer <code>rows</code> to equal the header count when it is not <code>-</code>. A diff sets the header to <code>0</code> yet carries two operations, so the rule demands <code>2 == 0</code> and the shipped decoder silently enforces neither. Separately, this worked example, and the canonical one in the spec, use spaces, while the grammar mandates a tab; a reader who copies it emits bytes the decoder rejects.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §02 FINDINGS ===================== -->
+  <section id="findings">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§02</div><div class="kicker">Findings</div></div></div>
+      <div class="body">
+        <h2>What the review found</h2>
+        <p class="lede">Eight entries. Four contract defects were confirmed independently by Claude, Antigravity, and Codex. Four integration and hardening gaps shape Gate 1. Explanations remain collapsed until opened.</p>
+
+        <div class="controls" role="group" aria-label="Filter findings by severity">
+          <span class="lbl">Filter</span>
+          <button class="chip" type="button" data-fil="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-fil="critical" aria-pressed="false">Critical</button>
+          <button class="chip" type="button" data-fil="high" aria-pressed="false">High</button>
+          <button class="chip" type="button" data-fil="verified" aria-pressed="false">Verified</button>
+          <button class="chip" type="button" data-fil="integration" aria-pressed="false">Integration</button>
+          <input class="search-input" data-search type="search" aria-label="Search all finding titles and explanations" placeholder="Search findings and explanations">
+          <span class="count" id="f-count" aria-live="polite">8 shown</span>
+        </div>
+
+        <div class="ledger" id="ledger">
+          <details class="entry" data-sev="critical" data-kind="verified">
+            <summary>
+              <span class="idx">01</span>
+              <span class="ttl">Canonical examples are not valid wire bytes</span>
+              <span class="meta"><span class="tag critical">Critical</span><span class="src">verified · CC + AG + OC</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p><code>FACTSPACK.md:81</code> mandates the field separator be a tab (<code>0x09</code>), but the worked examples at <code>:241</code> and <code>:272</code> contain zero tab bytes; every separator is a space. The decoder splits strictly on tabs, so a reader who copies the spec's own "lossless round-trip" example produces a row with the wrong cell count and is rejected.</p>
+              <div class="fix"><b>Resolution</b> Generate the docs from byte-exact fixtures, render a visible tab marker alongside, and decode plus re-encode every normative example in CI.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="critical" data-kind="verified">
+            <summary>
+              <span class="idx">02</span>
+              <span class="ttl">The diff row-count rule contradicts itself</span>
+              <span class="meta"><span class="tag critical">Critical</span><span class="src">verified · bundle.mjs:112/114/431</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p>A diff sets the header row-count to <code>0</code> ("patch only") but the spec demands the trailer equal the header count when it is not <code>-</code>. Since <code>0</code> is not <code>-</code>, the rule requires the trailer to equal zero while the diff carries real operations. The shipped decoder never compares the two, so the integrity guarantee is absent precisely where the chain depends on it.</p>
+              <div class="fix"><b>Resolution</b> Define three distinct quantities: master header equals the baseline count; the diff header is a zero sentinel bound to <code>kind=diff</code>; the trailer counts physical operations. Require equality for masters only. Block the chain until this lands.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="critical" data-kind="verified">
+            <summary>
+              <span class="idx">03</span>
+              <span class="ttl">Strict v0.2 integrity is optional in the decoder</span>
+              <span class="meta"><span class="tag critical">Critical</span><span class="src">verified · decoder</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p>A pack with no trailer returns success. The decoder cannot distinguish a legitimate pre-v0.2 pack from a truncated v0.2 one, and it never validates the header row-count against anything. The spec says a v0.2 consumer must verify the trailer is present; the reference decoder does not.</p>
+              <div class="fix"><b>Resolution</b> Split behaviour into explicit <code>strict</code> and <code>legacy</code> profiles. Strict requires the trailer, header validation, operation legality for the kind, duplicate rejection, and resource limits.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="high" data-kind="verified">
+            <summary>
+              <span class="idx">04</span>
+              <span class="ttl">The validator proves acceptance, not losslessness</span>
+              <span class="meta"><span class="tag high">High</span><span class="src">verified · validate.mjs:21</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p>The test oracle maps a literal <code>-</code> to the Unicode minus sign, then counts the affected cases as passing under a <code>lossless</code> label. It normalizes away the exact loss it should detect. Its object flattening descends only one level. "Fifteen of fifteen pass" is useful smoke coverage; it is not a round-trip proof.</p>
+              <div class="fix"><b>Resolution</b> An independent exact round-trip oracle that preserves every supported value and shape, and rejects genuinely ambiguous input with a precise error rather than coercing it green.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="high" data-kind="integration">
+            <summary>
+              <span class="idx">05</span>
+              <span class="ttl">Byte-determinism was assumed, never tested — RESOLVED (now proven by DET-1/2/3)</span>
+              <span class="meta"><span class="tag high">High · RESOLVED</span><span class="src">integration · canonicalization is normative + tested</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p>Was: float formatting, dictionary-key order, and Windows-vs-POSIX path separators were unpinned with zero conformance test, so the cache moat's "same input, same bytes" was unverified. Now: canonicalization is normative (spec §4.6 — POSIX paths, pinned numbers, sorted walks) and the canonical-producer profile pins the header to a content digest, so the whole pack is byte-identical for identical input.</p>
+              <div class="fix"><b>Resolved</b> <code>conformance DET-1</code> (in-process), <code>DET-2</code> (Windows vs POSIX paths emit identical bytes), and <code>DET-3</code> + <code>DET-3-id</code> (the shipped converter emits a byte-identical full pack across runs) all pass. See the §Δ "Full-pack determinism" fixes phase.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="high" data-kind="integration">
+            <summary>
+              <span class="idx">06</span>
+              <span class="ttl">The decoder has no resource ceilings</span>
+              <span class="meta"><span class="tag high">High</span><span class="src">integration · source-verified gap</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p>The local decoder has no configurable limits on bytes, lines, rows, columns, tables, or dictionary entries. That absence is source-verified. Earlier reports assert exposure through a live Workers path, but that deployment topology is not reproducible from this checkout and is therefore not presented here as a local fact.</p>
+              <div class="fix"><b>Resolution</b> Configurable caps on bytes, lines, rows, columns, tables, and dictionary entries; add resource-exhaustion cases to the corpus.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="high" data-kind="integration">
+            <summary>
+              <span class="idx">07</span>
+              <span class="ttl">Browser and reference encoders had no parity test — RESOLVED (now one encoder)</span>
+              <span class="meta"><span class="tag high">High · RESOLVED</span><span class="src">integration · unified on the reference codec</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p>Was: the browser emitter and the reference encoder were independent code and could drift while validation (decode-only) stayed green. Now: the converter emits via the reference codec's <code>encodeAuto</code>, esbuild-inlined into the page, so the two producers are literally one encoder.</p>
+              <div class="fix"><b>Resolved</b> <code>test/parity.mjs</code> asserts the inlined encoder === the reference codec byte-for-byte (full body); <code>conformance</code> adds <code>PARITY-byte</code> + <code>INLINE-DRIFT</code> + <code>BUNDLE-DRIFT</code> drift guards. See the §Δ "Encoder unification" fixes phase.</div>
+            </div>
+          </details>
+
+          <details class="entry" data-sev="medium" data-kind="integration">
+            <summary>
+              <span class="idx">08</span>
+              <span class="ttl">The published test count is stale</span>
+              <span class="meta"><span class="tag medium">Medium</span><span class="src">integration · 143 claimed, 106 found</span><span class="open-mark">+</span></span>
+            </summary>
+            <div class="detail">
+              <p><code>FACTSPACK.md</code> claims 143 tests. The current external factstack suite contains 106 test cases across four test files. The stale number is a credibility defect even if every present test passes.</p>
+              <div class="fix"><b>Resolution</b> Generate the count from the test runner or avoid a hard-coded number in normative documentation.</div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §03 EVIDENCE MATRIX ===================== -->
+  <section id="matrix">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§03</div><div class="kicker">Evidence</div></div></div>
+      <div class="body">
+        <h2>Every claim, with an honest state</h2>
+        <p class="lede">This replaces Edition I's impact calculator, which rendered invented feature weights as precise percentages. No score is manufactured here. An unknown stays unknown until the P0.1 benchmark measures it.</p>
+
+        <div class="controls" role="group" aria-label="Filter claims by evidence state">
+          <span class="lbl">Show</span>
+          <button class="chip" type="button" data-st="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-st="measured" aria-pressed="false">Verified</button>
+          <button class="chip" type="button" data-st="reported" aria-pressed="false">Reported</button>
+          <button class="chip" type="button" data-st="hypothesis" aria-pressed="false">Hypothesis</button>
+          <button class="chip" type="button" data-st="unknown" aria-pressed="false">Unknown</button>
+          <button class="chip" type="button" data-st="rejected" aria-pressed="false">Rejected</button>
+          <input class="search-input" data-search type="search" aria-label="Search evidence claims and notes" placeholder="Search claims and evidence">
+          <span class="count" id="m-count" aria-live="polite">18 shown</span>
+        </div>
+
+        <div class="matrix" id="matrix-rows">
+          <div class="mrow h"><span>Claim or feature</span><span>Evidence</span><span>Verdict</span><span>Note</span></div>
+
+          <div class="mrow" data-st="reported"><span class="claim">Fewer tokens than JSON<small>interning, schema once</small></span><span class="state reported">Author data</span><span class="verdict">Reproduce</span><span class="mnote">Representative payloads were reported, but this checkout does not contain the fixtures, tokenizer command, or reproducible harness needed to promote the claim to independently verified.</span></div>
+          <div class="mrow" data-st="measured"><span class="claim">SHA-256 trailer integrity<small>truncation and tamper detection</small></span><span class="state measured">Measured</span><span class="verdict">Keep</span><span class="mnote">Tests confirm truncated and tampered packs are rejected, when a trailer is present. Making it mandatory for v0.2 is a Gate 0 fix.</span></div>
+          <div class="mrow" data-st="measured"><span class="claim">Escaping stops column-split injection<small><code>\t \n \\</code></small></span><span class="state measured">Measured</span><span class="verdict">Keep</span><span class="mnote">Shipped and real. This, not XML wrapping, is the load-bearing injection defence at the grammar level.</span></div>
+          <div class="mrow" data-st="unknown"><span class="claim">Retrieval accuracy vs JSON, Markdown-KV<small>the core claim</small></span><span class="state unknown">Unknown</span><span class="verdict">Gate 2</span><span class="mnote">Never measured on a code map. The borrowed 44 to 61 percent figures are from a synthetic-record task on a different model. This is the question P0.1 exists to answer.</span></div>
+          <div class="mrow" data-st="hypothesis"><span class="claim">In-band legend cancels the density penalty<small>the central bet</small></span><span class="state hypothesis">Hypothesis</span><span class="verdict">Gate 2</span><span class="mnote">Evidence-informed (explicit metadata helped on other tabular tasks) but the legend is already spent; whether it nets positive on a pack is unproven.</span></div>
+          <div class="mrow" data-st="hypothesis"><span class="claim">Incident edge ordering aids traversal<small>53.8 vs 19.8 (borrowed)</small></span><span class="state hypothesis">Hypothesis</span><span class="verdict">Rework</span><span class="mnote">The figure is from synthetic graph QA with bare-integer nodes, not a pack, which already groups edges by source. Codify the ordering as a canonicalization rule; drop the accuracy claim.</span></div>
+          <div class="mrow" data-st="hypothesis"><span class="claim">Communities table aids reasoning<small>GraphRAG style</small></span><span class="state hypothesis">Hypothesis</span><span class="verdict">Rework</span><span class="mnote">Structure verified defensible (four communities cover half the real graph). But the non-deterministic <code>summary</code> column must leave the hashed wire, and the heuristic label needs an exact tie-break.</span></div>
+          <div class="mrow" data-st="hypothesis"><span class="claim">Explicit datatypes raise accuracy<small>"+20 percent" (borrowed)</small></span><span class="state hypothesis">Hypothesis</span><span class="verdict">Rework</span><span class="mnote">A single-model generic-tabular figure, double-counted against the already-mandatory legend. Scope <code>; types</code> to storage-form specials; gate the rest on a measured delta.</span></div>
+          <div class="mrow" data-st="hypothesis"><span class="claim">SCIP monikers shrink diffs<small>stable symbol identity</small></span><span class="state hypothesis">Hypothesis</span><span class="verdict">Gate 4</span><span class="mnote">Sound by construction (stable ids churn less), but the actual benefit is unmeasured because the chain it serves does not yet exist.</span></div>
+          <div class="mrow" data-st="unknown"><span class="claim">Prompt-cache economics, the moat<small>"99 percent cache hits"</small></span><span class="state unknown">Unknown</span><span class="verdict">Gate 4</span><span class="mnote">A real moat in principle, but the cache floor (around 1,024 tokens) and TTL (around five minutes) are unpriced; the win can go negative for small or intermittent packs. It needs real billing numbers, not a round figure.</span></div>
+          <div class="mrow" data-st="unknown"><span class="claim">Chain coalescing thresholds<small>"5 diffs / 20 percent"</small></span><span class="state unknown">Unknown</span><span class="verdict">Rework</span><span class="mnote">Both 5 and 8 are guesses, and file count is a weak proxy. This is emitter policy, not wire; the trigger is set by the benchmark's chain-depth curve.</span></div>
+          <div class="mrow" data-st="measured"><span class="claim">Byte-determinism, the foundation<small>"same input, same bytes"</small></span><span class="state measured">Measured</span><span class="verdict">Done</span><span class="mnote">Now pinned and tested: numbers via a locale-independent formatter, dictionary order deterministic, paths POSIX-canonicalized, and the canonical-producer profile pins the header to a content digest. Proven by conformance DET-1 (in-process), DET-2 (cross-platform paths), and DET-3 + DET-3-id (the shipped converter emits a byte-identical full pack across runs).</span></div>
+          <div class="mrow" data-st="measured"><span class="claim">Decoder resource ceilings<small>bytes, rows, dictionaries</small></span><span class="state measured">Verified gap</span><span class="verdict">Gate 1</span><span class="mnote">The local decoder exposes no configurable ceilings. Deployment exposure is not inferred from source alone; the implementation gap itself is verified.</span></div>
+          <div class="mrow" data-st="measured"><span class="claim">Emitter parity<small>browser vs reference bytes</small></span><span class="state measured">Closed</span><span class="verdict">Done</span><span class="mnote">CLOSED: the browser converter now emits via the reference codec's encodeAuto (inlined), so both producers are byte-identical — proven by parity.mjs (inlined === reference, full body) and guarded by INLINE-DRIFT + BUNDLE-DRIFT. Full-pack determinism is also closed: the canonical-producer profile pins the header to a content digest, so two runs are byte-identical (DET-3).</span></div>
+          <div class="mrow" data-st="measured"><span class="claim">Published test count<small>143 claimed, 106 present</small></span><span class="state measured">Contradicted</span><span class="verdict">Correct</span><span class="mnote">The current external factstack suite has 106 test cases in four test files. Generate the count or remove it.</span></div>
+          <div class="mrow" data-st="rejected"><span class="claim">Lite monikers as chain identity<small>heuristic matching</small></span><span class="state rejected">Rejected</span><span class="verdict">Hints only</span><span class="mnote">A probabilistic match cannot key a delete or replace; one false match silently mutates the wrong row. Demote to non-authoritative hints; on uncertainty, delete then add.</span></div>
+          <div class="mrow" data-st="rejected"><span class="claim">XML wrapping is an injection shield<small>"Bulletproof", "shielded"</small></span><span class="state rejected">Rejected</span><span class="verdict">Strike</span><span class="mnote">Security theatre: a cell can contain a closing tag. XML is a prompt-organization aid only. Real defence is tool-side decode plus instruction-taint tracking, treating every cell as data.</span></div>
+          <div class="mrow" data-st="rejected"><span class="claim">A process boundary escapes the AGPL<small>integration mitigation</small></span><span class="state rejected">Rejected</span><span class="verdict">Strike</span><span class="mnote">An unsettled legal conclusion stated as engineering fact. State the architecture only; defer the copyleft question to qualified counsel.</span></div>
+        </div>
+        <p class="note-line">Why a matrix, not a calculator: a slider that adds "+15 for ordering, +12 for communities" and caps at 92 manufactures precision the project has not earned. When P0.1 produces measured deltas with confidence intervals, the Unknown and Hypothesis rows become Measured, with ranges, not single digits.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §04 ROADMAP ===================== -->
+  <section id="roadmap">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§04</div><div class="kicker">Roadmap</div></div></div>
+      <div class="body">
+        <h2>The path, in dependency order</h2>
+        <p class="lede">Not four waves of features. A correctness gate, then a measurement gate, then features admitted one proven delta at a time.</p>
+
+        <div class="phase">
+          <div class="ptag">Gate 0 · blocking · now</div>
+          <h3>Repair the v0.2 contract before any v0.3 feature</h3>
+          <ul>
+            <li class="req"><span class="mk">1</span><span><b>Valid canonical examples.</b> Regenerate the spec's worked examples from byte-exact tab fixtures with a visible tab marker.</span></li>
+            <li class="req"><span class="mk">2</span><span><b>Fix diff and master count semantics.</b> Separate the quantities; enforce header-trailer equality for masters only.</span></li>
+            <li class="req"><span class="mk">3</span><span><b>Strict and legacy decoder profiles.</b> Strict v0.2 requires the trailer, validates counts, rejects duplicate or illegal operations, and leaves legacy acceptance explicit.</span></li>
+            <li class="req"><span class="mk">4</span><span><b>Independent exact oracle.</b> Preserve literal values and supported nesting without normalization, then reject ambiguity precisely.</span></li>
+            <li class="req"><span class="mk">5</span><span><b>Correct the test inventory.</b> Replace the stale 143-test claim with a generated count or no count.</span></li>
+          </ul>
+          <p class="note-line">Gate 0 changes are local contract repair. They still follow the project process: research, consensus amendment, roadmap encoding, then any spec edit.</p>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Gate 1 · conformance + hardening</div>
+          <h3>Prove deterministic, bounded, equivalent implementations</h3>
+          <ul>
+            <li class="req"><span class="mk">1</span><span><b>Cross-platform byte determinism.</b> Pin number formatting, dictionary order, path normalization, legend wording, and tie-breaks.</span></li>
+            <li class="req"><span class="mk">2</span><span><b>Resource ceilings.</b> Bound bytes, lines, rows, columns, tables, dictionaries, and deferred references with adversarial fixtures.</span></li>
+            <li class="req"><span class="mk">✓</span><span><b>Encoder parity — DONE.</b> The browser and reference encoders emit identical canonical bytes for the same input: the converter now runs the inlined reference codec (one encoder). Proven by <code>parity.mjs</code>, guarded by <code>INLINE-DRIFT</code> + <code>BUNDLE-DRIFT</code>.</span></li>
+          </ul>
+          <p class="note-line">Gate 1 is complete only when the same fixtures pass the independent strict decoder on every supported platform.</p>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Gate 2 · P0.1 · private evidence</div>
+          <h3>Measure the core claim before publishing it</h3>
+          <ul>
+            <li><span class="mk">1</span><span><b>Reproducible accuracy and token benchmark.</b> Pack versus JSON, CSV, Markdown-KV, and TOON on a real code map, with pinned models, fixed temperature, checked-in fixtures, and pre-registered confidence intervals.</span></li>
+            <li><span class="mk">2</span><span><b>Private first.</b> Results remain local until the owner explicitly approves publication. No benchmark number enters a public surface before the harness can reproduce it.</span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Owner constraint · licensing</div>
+          <h3>The license remains unchanged</h3>
+          <ul>
+            <li><span class="mk">✓</span><span><b>Settled:</b> AGPL-3.0 plus commercial dual licensing for all code, codec included.</span></li>
+            <li><span class="mk">?</span><span><b>Owner-only open question:</b> whether spec text and conformance fixtures receive a permissive documentation or data license. This review records the question and makes no recommendation.</span></li>
+            <li><span class="mk">×</span><span><b>Strike:</b> any claim that a process boundary determines copyleft scope. Describe architecture; leave legal conclusions to qualified counsel.</span></li>
+          </ul>
+        </div>
+
+        <div class="phase">
+          <div class="ptag">Gate 3 · additive, wire-compatible</div>
+          <h3>Emit what is computed, once it earns its place</h3>
+          <ul>
+            <li><span class="mk">+</span><span><b>Communities table</b> with a deterministic heuristic label (summary column off the hashed wire).</span></li>
+            <li><span class="mk">+</span><span><b>Datatypes</b> in <code>;</code> comment lines, scoped to storage-form specials.</span></li>
+            <li><span class="mk">+</span><span><b>Incident edge ordering</b> codified as a canonicalization rule.</span></li>
+            <li><span class="mk">+</span><span><b>Capability line and canonicalization section</b>, both wire-compatible.</span></li>
+          </ul>
+          <p class="note-line">Impact unmeasured. Each item must show a measured delta on the P0.1 code-map benchmark, or it does not ship.</p>
+        </div>
+
+        <div class="phase muted">
+          <div class="ptag">Gate 4 · breaking, agent-v5 + chain</div>
+          <h3>Stable identity, then the chain</h3>
+          <ul>
+            <li><span class="mk">·</span><span><b>Position-free monikers.</b> Lite heuristic monikers are hints only; they may never key a delete or replace.</span></li>
+            <li><span class="mk">·</span><span><b>Collision-free value representation.</b> Resolve empty, missing, and literal sentinel values only in a new wire major.</span></li>
+            <li><span class="mk">·</span><span><b>The master and diff chain.</b> Build only after identity is stable, with measured coalescing policy and an explicit concurrency model for multi-agent repositories.</span></li>
+          </ul>
+          <p class="note-line">Cache economics are the real moat, and unproven: a token floor and a short TTL mean the win can be negative for small or intermittent packs.</p>
+        </div>
+
+        <div class="phase muted">
+          <div class="ptag">Wave 3 · ecosystem</div>
+          <h3>Ports, conformance, editors</h3>
+          <ul>
+            <li><span class="mk">·</span><span>Spec-repo split with language-agnostic conformance fixtures; first-party Python port and CLI (decode and validate first).</span></li>
+            <li><span class="mk">·</span><span>Escaping is the real injection defence (shipped). XML is organization, not a shield. Authenticity, if added, is an out-of-band signature attesting origin only.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §05 CONSENSUS ===================== -->
+  <section id="consensus">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§05</div><div class="kicker">Consensus</div></div></div>
+      <div class="body">
+        <h2>What the next consensus amendment must say</h2>
+        <p class="lede">R1 through R7 remain useful, but the final validations add blocking evidence. Reconciliation belongs in the consensus document before any roadmap or spec change.</p>
+        <div class="rcards reveal">
+          <div class="rcard"><div class="rid">R1</div><h4>Datatypes are an experiment</h4><p>Additive <code>; types</code> only. Decoded values remain v0.2-equivalent, and admission requires a measured delta.</p></div>
+          <div class="rcard"><div class="rid">R2</div><h4>No settled chain threshold</h4><p>Separate correctness limits from performance policy. Derive coalescing from a measured chain-depth curve.</p></div>
+          <div class="rcard"><div class="rid">R3</div><h4>Do not overload an empty sentinel</h4><p>Use a derived projection now. Reserve an unambiguous escape only for a new wire major.</p></div>
+          <div class="rcard"><div class="rid">R4</div><h4>Lite monikers are hints</h4><p>Never use probabilistic identity as a destructive mutation key. Ambiguity resolves to delete plus add.</p></div>
+          <div class="rcard"><div class="rid">R5</div><h4>Record evidence provenance</h4><p>Distinguish source-verified, author-reported, hypothesis, unknown, and rejected claims on every surface.</p></div>
+          <div class="rcard"><div class="rid">R6</div><h4>License unchanged</h4><p>AGPL plus commercial remains settled. Record the spec and fixture license as owner-only open, with no recommendation.</p></div>
+          <div class="rcard"><div class="rid">R7</div><h4>Canonicalization before capabilities</h4><p>Make determinism normative, caps enforceable, and the adversarial corpus broader. Capability lines remain descriptive.</p></div>
+        </div>
+        <p class="note-line">Governance order: amend consensus with attribution, encode the result in <code>planning/ROADMAP-v0.3.md</code>, and only then consider a change to <code>FACTSPACK.md</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §06 COORDINATION ===================== -->
+  <section id="agents-sec">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§06</div><div class="kicker">Coordination</div></div></div>
+      <div class="body">
+        <h2>Three validations, one evidence-weighted verdict</h2>
+        <p class="lede">The agents did not co-sign a single document. Each left an attributable validation, and the final synthesis reconciles those sources without forging joint assent.</p>
+        <div class="source-ledger reveal">
+          <div class="source-row"><span class="source-agent">Claude / CC</span><span class="source-copy"><code>research/2026-06-13-claude-project-state-review.md</code><br>Confirmed the four contract defects, stale test count, orphaned v2 page, browser/reference parity gap, and zero-hash fallback risk.</span><span class="source-time">file modified 2026-06-13 20:21:42 +05:30</span></div>
+          <div class="source-row"><span class="source-agent">Antigravity / AG</span><span class="source-copy"><code>research/2026-06-13-antigravity-cross-verification.md</code><br>Confirmed the four defects and independently elevated deterministic canonicalization and resource ceilings.</span><span class="source-time">2026-06-13 19:11:37 +05:30</span></div>
+          <div class="source-row"><span class="source-agent">Codex / OC</span><span class="source-copy"><code>research/2026-06-13-1917-oc-cross-verified-latest-files-review.md</code><br>Confirmed the defects plus mobile overflow, canonical divergence, stale metadata, and an unpinned launcher path.</span><span class="source-time">2026-06-13 19:17:09 +05:30</span></div>
+          <div class="source-row"><span class="source-agent">Synthesis / OC</span><span class="source-copy"><code>research/2026-06-13-tri-agent-final-verdict.md</code><br>Reconciled the three validations into the Gate 0 through Gate 4 verdict shown on this page.</span><span class="source-time">2026-06-13 20:26:54</span></div>
+        </div>
+        <p class="note-line">Credit is preserved by source. Conflicts are resolved by repository evidence and owner constraints, not by vote count.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== §07 COLOPHON ===================== -->
+  <section id="colophon" class="colophon">
+    <div class="sheet col">
+      <div class="rail"><div class="sticky"><div class="folio">§07</div><div class="kicker">Colophon</div></div></div>
+      <div class="body">
+        <h2>About this revised edition</h2>
+        <p>This revision replaces the earlier review snapshot with the latest signed Claude, Antigravity, and Codex validations plus the final reconciled verdict. It remains a self-contained research artifact. It does not amend the consensus, roadmap, or specification by itself.</p>
+        <dl>
+          <dt>What changed</dt>
+          <dd>The final GO/NO-GO decision now leads. Eight findings, eighteen evidence rows, exact gate dependencies, and a timestamped validation ledger replace the older snapshot.</dd>
+          <dt>Method</dt>
+          <dd>Red-team across seven adversarial lenses, refute each objection with three diverse-lens skeptics, keep only what survived, and verify the concrete claims against the codec and spec bytes.</dd>
+          <dt>Revision</dt>
+          <dd>2026-06-13 20:43:51 +05:30. Signed OC as the page editor and final-synthesis author; individual validation credit remains CC, AG, and OC as listed above.</dd>
+          <dt>Honesty</dt>
+          <dd>Claims are separated into source-verified, author-reported, hypothesis, unknown, and rejected states. Unknowns stay unknown until P0.1.</dd>
+          <dt>Typography</dt>
+          <dd>Set in a local serif (Sitka, Hoefler Text, or Palatino, by platform) with a monospace for data. No web fonts; the page is a single self-contained file.</dd>
+          <dt>Author</dt>
+          <dd>The FactsPack format was invented and authored by Aditya Mishra. AGPL-3.0 with commercial dual licensing.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>FactsPack Final Review · Revised Edition · 2026-06-13</span>
+  <span><b>Status</b> local research verdict; nothing committed, published, or deployed</span>
+  <span>© 2026 Aditya Mishra · AGPL-3.0</span>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    var label = document.getElementById('theme-label');
+
+    function sync() {
+      var dark = root.getAttribute('data-theme') === 'dark';
+      label.textContent = dark ? 'Light' : 'Dark';
+      btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    }
+    sync();
+    btn.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('fp-theme', next); } catch (e) { /* ignore */ }
+      sync();
+    });
+
+    /* generic chip-filter: data-group attr on container, data-fil/data-st on chips, data-<key> on rows */
+    function wireFilter(controlSel, rowSel, attr, countEl, noun) {
+      var controls = document.querySelector(controlSel);
+      var chips = Array.prototype.slice.call(controls.querySelectorAll('.chip'));
+      if (!chips.length) return;
+      var key = chips[0].hasAttribute('data-fil') ? 'fil' : 'st';
+      var rows = Array.prototype.slice.call(document.querySelectorAll(rowSel));
+      var count = document.getElementById(countEl);
+      var search = controls.querySelector('[data-search]');
+      var active = 'all';
+      function apply() {
+        var query = search ? search.value.trim().toLowerCase() : '';
+        var shown = 0;
+        rows.forEach(function (r) {
+          var stateMatch = active === 'all'
+            || r.getAttribute('data-sev') === active
+            || r.getAttribute('data-kind') === active
+            || r.getAttribute('data-st') === active;
+          var textMatch = !query || r.textContent.toLowerCase().indexOf(query) !== -1;
+          var match = stateMatch && textMatch;
+          r.hidden = !match;
+          if (match) shown++;
+        });
+        if (count) count.textContent = shown + ' ' + noun;
+        chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c.getAttribute('data-' + key) === active)); });
+      }
+      chips.forEach(function (c) {
+        c.addEventListener('click', function () { active = c.getAttribute('data-' + key); apply(); });
+      });
+      if (search) search.addEventListener('input', apply);
+    }
+    wireFilter('#findings .controls', '#ledger .entry', null, 'f-count', 'shown');
+    wireFilter('#matrix .controls', '#matrix-rows .mrow:not(.h)', null, 'm-count', 'shown');
+
+    var gateChecks = Array.prototype.slice.call(document.querySelectorAll('[data-gate-check]'));
+    var readinessOutcome = document.getElementById('readiness-outcome');
+    function updateReadiness() {
+      var done = gateChecks.filter(function (c) { return c.checked; }).length;
+      if (done === gateChecks.length) {
+        readinessOutcome.textContent = done + ' of ' + gateChecks.length + ' marked locally. Promotion still requires repository evidence and governance reconciliation.';
+      } else {
+        readinessOutcome.textContent = done + ' of ' + gateChecks.length + ' marked. Feature expansion remains NO-GO.';
+      }
+      try {
+        localStorage.setItem('fp-gate-checks', JSON.stringify(gateChecks.filter(function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-gate-check'); })));
+      } catch (e) { /* ignore */ }
+    }
+    try {
+      var savedChecks = JSON.parse(localStorage.getItem('fp-gate-checks') || '[]');
+      gateChecks.forEach(function (c) { c.checked = savedChecks.indexOf(c.getAttribute('data-gate-check')) !== -1; });
+    } catch (e) { /* ignore */ }
+    gateChecks.forEach(function (c) { c.addEventListener('change', updateReadiness); });
+    document.getElementById('reset-checks').addEventListener('click', function () { gateChecks.forEach(function (c) { c.checked = false; }); updateReadiness(); });
+    updateReadiness();
+
+    /* details open/close mark toggle */
+    document.querySelectorAll('.entry').forEach(function (d) {
+      var mark = d.querySelector('.open-mark');
+      if (!mark) return;
+      d.addEventListener('toggle', function () { mark.textContent = d.open ? '−' : '+'; });
+    });
+
+    /* staggered reveal, gated by reduced-motion */
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.reveal').forEach(function (el, i) {
+        el.style.animationDelay = (i * 0.08) + 's';
+      });
+    }
+  })();
+</script>
+</body>
+</html>

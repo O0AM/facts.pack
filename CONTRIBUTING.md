@@ -8,7 +8,7 @@ Thank you for your interest in contributing to the FactsPack standard! Since `.p
 
 * **Spec Changes are Contract Changes:** The FactsPack specification v0.2 is locked and implemented. Any proposed changes to the grammar, prefixes, or parsing logic must be carefully reviewed. Please read Section 11 ("Versioning") of [`FACTSPACK.md`](FACTSPACK.md) before proposing changes.
 * **Open an Issue First:** For major changes or additions to the specification, please open a discussion issue first to align on design decisions and token economic implications.
-* **Keep Documentation Synced:** If you modify the specification, you must update the corresponding guides (`README.md`, `PACK_VISUAL_MODEL.md`, and `docs/PACK-FORMAT-GUIDE.md`) in the same pull request.
+* **Keep Documentation Synced:** If you modify the specification, you must update the corresponding guides (`README.md`, `planning/PACK_VISUAL_MODEL.md`, and `docs/PACK-FORMAT-GUIDE.md`) in the same pull request.
 
 ---
 

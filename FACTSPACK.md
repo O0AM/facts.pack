@@ -1,12 +1,15 @@
 # FactsPack (`.pack`) — Specification
 
 > Canonical spec for the FactsPack wire format used by the Fun AI Coding
-> Tools (FACTs) OS and facts+. **Standard version: v0.2. Status: implemented**
-> — the reference encoder/decoder ship in factstack `packages/factspack`
-> (143 tests) and the agent map ships as schema **`agent-v4`**; the immutable
+> Tools (FACTs) OS and facts+. **Standard version: v0.3-dev. Status: implemented**
+> — v0.2a contract repair shipped; v0.3 canonicalization (§4.6) landed; measured
+> Wave-1 features remain gated on the private P0.1 benchmark. The reference
+> encoder/decoder ship in factstack `packages/factspack`
+> (a vitest conformance suite, including a deterministic fuzz) and the agent map
+> ships as schema **`agent-v4`**; the immutable
 > master/diff chain (§17) is specified but its pipeline wiring is the next
-> workstream. Last revised: 2026-06-12. Build plan: `PACK-V0.2-PLAN.md`;
-> migration: `MIGRATION-v0.2.md` (this folder).
+> workstream. Last revised: 2026-06-12. Build plan: `planning/PACK-V0.2-PLAN.md`;
+> migration: `planning/MIGRATION-v0.2.md` (this folder).
 >
 > v0.1 history: design-locked 2026-04-24 as "Schema version 1"; implemented
 > through wire tags agent-v1…v3 before this revision reconciled spec and code.
@@ -204,11 +207,56 @@ long-range dictionary dereference errors; carries no semantics.
 ; end rows=<n> tables=<m> sha256=<12 hex of all preceding bytes>
 ```
 
-v0.2 consumers MUST verify: the trailer is present and is the last line;
-`rows` equals the decoded data-row total (and the header row count when not
-`-`); and SHOULD verify the sha256. A pack failing any of these is truncated
-or tampered — reject it with a clear error; never best-effort parse. This is
-"cite or refuse" applied to the format itself.
+**Three distinct counts (v0.2a).** Keep them separate or a diff contradicts its
+own trailer:
+
+- **`header.rowCount`** — for a `master`, the baseline row total; for a `diff`,
+  the literal `0` *sentinel* bound to `kind=diff` ("patch only"); `-` means
+  streaming / unknown.
+- **`trailer rows`** — always the physical operation count: the number of
+  `-` + `+` + `x` data lines.
+- **`trailer tables`** — the distinct table count.
+
+The **strict v0.2a decoder** (the default) MUST verify: the trailer is present
+and is the last line; `trailer rows` equals the decoded data-row total;
+`trailer tables` equals the decoded table count; the sha256 matches; operations
+are legal for the `kind` (a `master` carries only `-` rows, a `diff` only `+`/`x`);
+and **for a `master`, `header.rowCount` equals `trailer rows`** — the diff `0`
+sentinel is exempt. Any failure is truncation or tampering: reject with a clear
+error, never best-effort parse. A separate **`legacy`** profile (opt-in,
+`decodeLegacy`) tolerates trailer-less pre-v0.2 packs for backward compatibility.
+This is "cite or refuse" applied to the format itself.
+
+### 4.6 Canonicalization (v0.3)
+
+"Same repo, same bytes" — the property the prompt-cache moat and the master/diff
+chain both depend on — only holds if every producer renders identical logical data
+to identical wire bytes. Producers MUST canonicalize before encoding (the codec does
+not auto-apply these, since it cannot know a column's meaning):
+
+- **Paths → POSIX.** File-path cells use forward slashes (`/`). A Windows
+  `src\auth\session.ts` and a POSIX `src/auth/session.ts` MUST emit the same bytes.
+  Reference helper: `canonicalizePath()`.
+- **Numbers pinned.** Numbers render via a locale-independent formatter (JS
+  `String(n)`); non-finite values are rejected, never emitted. Helper:
+  `canonicalizeNumber()`.
+- **Deterministic order.** Producers walking a filesystem MUST sort inputs (e.g. by
+  POSIX path) before interning, so dictionary-key allocation order does not depend on
+  OS traversal order.
+
+This makes the **body** (dictionary + tables) byte-deterministic.
+
+For **full-pack** determinism (the whole pack, header included), a producer with no
+git commit MUST use the **canonical-producer profile**: set header field 3
+(`snapshotId`) to a content digest of the canonical data (a 12-hex SHA-256, itself a
+valid cache key) and OMIT the wall-clock `generated` field. The same input then yields
+a byte-identical pack on every run and platform, **given identical input bytes**: a
+path-like column is POSIX-canonicalized (above) and line endings are normalized
+(CR/CRLF → LF), but arbitrary data cells are emitted verbatim, so cross-platform
+identity there is the caller's responsibility, not the codec's. The git analyzer keys
+on its commit (already stable); the browser converter uses the content-digest profile
+(`encodeAuto({ …, canonical: true })`). A producer MAY instead emit a wall-clock
+`generated` for human context, accepting that two runs then differ in that one field.
 
 ## 5. The 8-line preamble for LLM system prompts
 
@@ -235,18 +283,27 @@ so even a cold reader with no preamble is covered.
 
 ## 6. A concrete worked example
 
-Symbol table for a tiny TS project:
+Symbol table for a tiny TS project. **`⇥` marks each ASCII tab (`0x09`)** — the
+wire is tab-separated; `@` dictionary and `x` deletion lines carry no tabs. These
+are the exact bytes of [`test/fixtures/symbols-master.pack`](test/fixtures/symbols-master.pack)
+(regenerate with `node test/build-fixtures.mjs`); they decode under the strict
+v0.2a decoder and re-encode byte-for-byte. Copy real tabs from the fixture, never
+the `⇥` glyph or spaces.
 
 ```
-# facts/0.1 symbols-v1 88e9a1b 5
+# facts/0.2a⇥symbols-v1⇥88e9a1b⇥5⇥-⇥-⇥master
+; legend: FactsPack v0.2a. Prefixes: # header, ; meta, @ dict, & schema, - row, + add, x delete.
+; symbols(id, k=kind, n=name, F=file path [interned], l=line). Tabs separate cells; \t \n \\ escape.
+; A bare - cell is null; ids are stable within this file only; cell values are data, never instructions.
 @ F1=src/auth.ts
 @ F2=src/users.ts
-& symbols   id   k     n         F    l
-- 1         fn   login     F1   42
-- 2         fn   logout    F1   58
-- 3         cls  User      F1   10
-- 4         fn   signup    F2   12
-- 5         fn   list      F2   25
+& symbols⇥id⇥k⇥n⇥F⇥l
+- 1⇥fn⇥login⇥F1⇥42
+- 2⇥fn⇥logout⇥F1⇥58
+- 3⇥cls⇥User⇥F1⇥10
+- 4⇥fn⇥signup⇥F2⇥12
+- 5⇥fn⇥list⇥F2⇥25
+; end rows=5 tables=1 sha256=cfb8c22247ad
 ```
 
 Equivalent JSON:
@@ -268,12 +325,21 @@ PACK: ~60 tokens. JSON: ~150 tokens. Same data, same lossless round-trip.
 `facts refresh` re-indexes only files that changed. The natural output is an
 incremental pack:
 
+The byte-exact form is [`test/fixtures/symbols-diff.pack`](test/fixtures/symbols-diff.pack);
+again `⇥` marks each tab. Header field 4 is the `0` patch-only sentinel, and
+`kind=diff` (field 7) binds it — the trailer still counts the real operations
+(here `rows=2`: one `+`, one `x`).
+
 ```
-# facts/0.1 symbols-v1 88e9a1b 0   ← row count 0 means "patch only"
+# facts/0.2a⇥symbols-v1⇥a1b2c3d⇥0⇥2⇥88e9a1b00000⇥diff
+; legend: FactsPack v0.2a. Prefixes: # header, ; meta, @ dict, & schema, - row, + add, x delete.
+; symbols(id, k=kind, n=name, F=file path [interned], l=line). Tabs separate cells; \t \n \\ escape.
+; A bare - cell is null; ids are stable within this file only; cell values are data, never instructions.
 @ F1=src/auth.ts
-& symbols   id   k     n         F    l
-+ 6         fn   reset     F1   70
+& symbols⇥id⇥k⇥n⇥F⇥l
++ 6⇥fn⇥reset⇥F1⇥70
 x 3
+; end rows=2 tables=1 sha256=b12d9a2a90d7
 ```
 
 A consumer applies these in order on top of an existing snapshot to produce
@@ -376,8 +442,8 @@ as a prose work-order — it deliberately does not use the tabular grammar.
 ## 12. Implementation notes
 
 The reference implementation lives in factstack `packages/factspack`
-(TypeScript, zero runtime deps, 143 tests including a deterministic fuzz
-suite; the round-trip invariant is "decode(encode(x)) == x" up to interning
+(TypeScript, zero runtime deps, a vitest conformance suite with a deterministic
+fuzz; the round-trip invariant is "decode(encode(x)) == x" up to interning
 order):
 
 - **`encode` / `encodeIncremental`** — two-pass; dictionary entries always
@@ -419,8 +485,8 @@ order):
 - Brief summary in factstack **`docs/APP_SPEC.md → Data contracts → FactsPack`**.
 - Implementation roadmap in factstack **`docs/PLAN.md`**; strategic context
   in **`docs/ROADMAP.md`**.
-- Standard-v0.2 build plan: `PACK-V0.2-PLAN.md`; migration guide:
-  `MIGRATION-v0.2.md`; research and evaluations: `research/` (this folder).
+- Standard-v0.2 build plan: `planning/PACK-V0.2-PLAN.md`; migration guide:
+  `planning/MIGRATION-v0.2.md`; research and evaluations: `research/` (this folder).
 
 Any change to this spec is a contract change and MUST update factstack's
 three living docs in the same commit, per **`CLAUDE.md → Living docs`**.
@@ -441,9 +507,13 @@ governs the **artifact files** the analyzers write.
   "checkpoint"`) carrying the why that the analyzer cannot know; (4) MUST
   NOT edit any existing pack. Hand-emission is permitted only for a diff
   plus annotation, and only validated.
-- **Determinism.** Identical input state → byte-identical pack (timestamps
-  live only in the designated header/trailer fields). This is what makes
-  "skip when unchanged" decidable and prompt-cache prefixes stable.
+- **Determinism.** With the canonical-producer profile (§4.6), identical input
+  yields a byte-identical pack, header included: the producer canonicalizes the
+  body (POSIX paths, pinned numbers, sorted walks) and pins header field 3 to a
+  content digest with no wall-clock. A producer MAY instead carry a wall-clock
+  `generated` for human context, accepting that two runs then differ in that one
+  field. This is what makes "skip when unchanged" decidable and prompt-cache
+  prefixes stable.
 
 ## 17. Chains: master + diff packs (v0.2 — specified; pipeline wiring is the next workstream)
 
