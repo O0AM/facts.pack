@@ -4,5 +4,10 @@
 *.pack text eol=lf
 *.pack-diff text eol=lf
 
-# Everything else: normalize to LF in the repository.
-* text=auto
+# Everything else: normalize to LF and CHECK OUT as LF on every platform. This
+# repo is byte-sensitive end to end — the vendored codec bundle
+# (test/factspack.bundle.mjs) and the inlined encoder in docs/index.html are
+# compared byte-for-byte against a fresh LF esbuild by the INLINE-DRIFT /
+# BUNDLE-DRIFT guards, so a CRLF checkout (autocrlf on Windows) would make those
+# guards false-fail. Pinning eol=lf keeps a clean clone byte-identical everywhere.
+* text=auto eol=lf

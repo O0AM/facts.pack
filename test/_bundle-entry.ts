@@ -11,3 +11,4 @@
  */
 export * from '../../claude/factstack/packages/factspack/src/index.js';
 export { encodeAuto } from './_encode-auto.js';
+export { computeDiff, applyChain, type AppliedTable } from './_chain.js';

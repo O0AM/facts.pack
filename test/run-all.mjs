@@ -56,6 +56,8 @@ const nodeSuites = [
   ['oracle.mjs', 'independent EXACT round-trip oracle (U4)'],
   ['conformance.mjs', 'Gate 1 conformance — determinism, golden vectors, parity'],
   ['parity.mjs', 'browser inlined codec === reference codec (byte parity)'],
+  ['chain.mjs', 'master/diff chain: exact diff/apply reconstruction + cache economics'],
+  ['agentv5.mjs', 'agent-v5 wire: typed & tokens, corpus field, self-describing ; lines'],
   ['grounding.mjs', 'v0.2a contract repair, proven vs observable bytes'],
   ['security.mjs', 'codec + web-app security regression'],
 ];

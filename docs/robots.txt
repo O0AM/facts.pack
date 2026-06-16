@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://o0am.github.io/facts.pack/sitemap.xml

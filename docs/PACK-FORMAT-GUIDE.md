@@ -427,8 +427,8 @@ chain design — was invented and specified by **Aditya Mishra**
 project family: **factstack** (codebase mapping for agents) and **facts+**
 (UI/accessibility auditing). v0.1 was design-locked on 2026-04-24; the
 v0.2 standard was specified and implemented in June 2026, with a reference
-encoder/decoder (TypeScript, zero runtime dependencies, 143 tests
-including a deterministic fuzz suite).
+encoder/decoder (TypeScript, zero runtime dependencies, a
+comprehensive test suite including a deterministic fuzz suite).
 
 This repository is the format's open-source home, licensed under the
 **GNU Affero General Public License v3.0** ([`LICENSE`](../LICENSE)). Because

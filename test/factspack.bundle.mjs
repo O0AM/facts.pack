@@ -241,7 +241,7 @@ function encode(opts) {
     ...opts.header,
     rowCount: opts.header.rowCount ?? total
   });
-  return assemble(headerOut, metaLines(opts.meta, enc), enc.dictLines(), tableLines, {
+  return assemble(headerOut, metaLines(withCapsTyped(opts.meta, opts.tables), enc), enc.dictLines(), tableLines, {
     rows: total,
     tables: distinctTableCount(opts.tables)
   });
@@ -278,7 +278,7 @@ function encodeIncremental(opts) {
     kind: "diff"
   });
   const total = opts.tables.reduce((s, t) => s + t.addedRows.length + t.deletedIds.length, 0);
-  return assemble(headerOut, metaLines(opts.meta, enc), enc.dictLines(), tableLines, {
+  return assemble(headerOut, metaLines(withCapsTyped(opts.meta, opts.tables), enc), enc.dictLines(), tableLines, {
     rows: total,
     tables: distinctTableCount(opts.tables)
   });
@@ -296,7 +296,7 @@ function renderHeader(h) {
   return `# ${h.producer}	${h.schema}	${h.snapshotId}	${rc}${renderHeaderExtras(h)}`;
 }
 function renderHeaderExtras(h) {
-  if (h.seq === void 0 && h.parent === void 0 && h.kind === void 0 && h.generated === void 0) {
+  if (h.seq === void 0 && h.parent === void 0 && h.kind === void 0 && h.generated === void 0 && h.corpus === void 0) {
     return "";
   }
   if (h.seq !== void 0 && (!Number.isInteger(h.seq) || h.seq < 0)) {
@@ -305,20 +305,30 @@ function renderHeaderExtras(h) {
   if (h.kind !== void 0 && h.kind !== "master" && h.kind !== "diff") {
     throw new PackEncodeError(`Header.kind must be 'master' or 'diff', got '${h.kind}'`);
   }
-  for (const [k, v] of Object.entries({ parent: h.parent, generated: h.generated })) {
+  for (const [k, v] of Object.entries({ parent: h.parent, generated: h.generated, corpus: h.corpus })) {
     if (v === void 0) continue;
-    if (typeof v !== "string" || v.length === 0 || v.indexOf("	") >= 0 || v.indexOf("\n") >= 0) {
-      throw new PackEncodeError(`Header.${k} must be a non-empty string without tab/newline`);
+    if (typeof v !== "string" || v.length === 0 || /[\t\n\r]/.test(v)) {
+      throw new PackEncodeError(`Header.${k} must be a non-empty string without tab/newline/CR`);
     }
   }
+  if (h.generated === "-") throw new PackEncodeError("Header.generated must not be '-' (the reserved absent placeholder)");
+  if (h.corpus === "-") throw new PackEncodeError("Header.corpus must not be '-' (the reserved absent placeholder)");
   const slots = [
     h.seq !== void 0 ? String(h.seq) : "-",
     h.parent ?? "-",
     h.kind ?? "-",
-    h.generated ?? "-"
+    h.generated ?? "-",
+    h.corpus ?? "-"
+    // agent-v5 field 9
   ];
   let last = slots.length - 1;
-  const defined = [h.seq !== void 0, h.parent !== void 0, h.kind !== void 0, h.generated !== void 0];
+  const defined = [
+    h.seq !== void 0,
+    h.parent !== void 0,
+    h.kind !== void 0,
+    h.generated !== void 0,
+    h.corpus !== void 0
+  ];
   while (last >= 0 && !defined[last]) last--;
   return "	" + slots.slice(0, last + 1).join("	");
 }
@@ -329,6 +339,14 @@ function declSchemaLine(name, columns) {
   for (const c of columns) {
     if (!c.name || c.name.indexOf("	") >= 0 || c.name.indexOf("\n") >= 0) {
       throw new PackEncodeError(`Column name '${c.name}' is invalid (empty or contains tab/newline)`);
+    }
+    if (c.type !== void 0) {
+      if (c.name.indexOf(":") >= 0) {
+        throw new PackEncodeError(`Column '${c.name}' carries a type but its name contains ':' (ambiguous with the type token)`);
+      }
+      if (!c.type || /[\t\n:]/.test(c.type)) {
+        throw new PackEncodeError(`Column '${c.name}' type '${c.type}' is invalid (empty or contains tab/newline/':')`);
+      }
     }
     if (c.internGroup !== void 0) {
       if (!isInternedColumn(c.name)) {
@@ -343,7 +361,7 @@ function declSchemaLine(name, columns) {
       }
     }
   }
-  return `& ${name}	${columns.map((c) => c.name).join("	")}`;
+  return `& ${name}	${columns.map((c) => c.type !== void 0 ? `${c.name}:${c.type}` : c.name).join("	")}`;
 }
 function rowLine(prefix, row, columns, enc) {
   const cells = row.map((cell, i) => {
@@ -380,6 +398,14 @@ function metaLines(meta, enc) {
     if (hot) out.push(hot);
   }
   return out;
+}
+function withCapsTyped(meta, tables) {
+  const hasTyped = tables.some((t) => t.columns.some((c) => c.type !== void 0));
+  if (!hasTyped) return meta;
+  const legend = meta?.legend ?? [];
+  const declared = legend.some((l) => l.startsWith("caps ") && l.slice(5).split(/\s+/).includes("typed"));
+  if (declared) return meta;
+  return { ...meta, legend: ["caps typed", ...legend] };
 }
 function distinctTableCount(tables) {
   return new Set(tables.map((t) => t.name)).size;
@@ -473,6 +499,8 @@ var PackDecodeError = class extends Error {
 function decode(text, opts) {
   const mode = opts?.mode ?? "strictV02";
   const limits = mode === "strictV02" ? { ...STRICT_DEFAULT_LIMITS, ...opts?.limits } : { ...opts?.limits };
+  let typedColumns = opts?.typedColumns ?? false;
+  let sawSchema = false;
   if (text.length > 0 && text.charCodeAt(0) === 65279) {
     throw new PackDecodeError("BOM detected at start of pack \u2014 forbidden by spec \xA710");
   }
@@ -535,12 +563,21 @@ function decode(text, opts) {
         break;
       }
       case 38: {
+        sawSchema = true;
         const fields = body.split("	");
         const name = fields[0];
         if (!name) {
           throw new PackDecodeError(`Line ${i + 1}: schema declaration missing table name`);
         }
-        const columns = fields.slice(1).map((n) => ({ name: n }));
+        const columns = fields.slice(1).map((n) => {
+          if (typedColumns) {
+            const ci = n.indexOf(":");
+            if (ci > 0 && ci < n.length - 1 && n.indexOf(":", ci + 1) < 0) {
+              return { name: n.slice(0, ci), type: n.slice(ci + 1) };
+            }
+          }
+          return { name: n };
+        });
         if (columns.length === 0) {
           throw new PackDecodeError(`Line ${i + 1}: schema for '${name}' has zero columns`);
         }
@@ -549,7 +586,7 @@ function decode(text, opts) {
         }
         const existing = tables.get(name);
         if (existing) {
-          if (existing.columns.length !== columns.length || existing.columns.some((c, j) => c.name !== columns[j].name)) {
+          if (existing.columns.length !== columns.length || existing.columns.some((c, j) => c.name !== columns[j].name || c.type !== columns[j].type)) {
             throw new PackDecodeError(
               `Line ${i + 1}: schema for '${name}' redeclared with different columns`
             );
@@ -601,6 +638,14 @@ function decode(text, opts) {
         if (t) {
           trailer = { ...t, lineNo: i + 1, start: lineStart };
         } else {
+          if (body.startsWith("caps ") && body.slice(5).split(/\s+/).includes("typed")) {
+            if (sawSchema) {
+              throw new PackDecodeError(
+                `Line ${i + 1}: '; caps \u2026 typed' appears after an '&' schema line; capabilities must precede the schemas they govern`
+              );
+            }
+            typedColumns = true;
+          }
           meta.push(body);
         }
         break;
@@ -740,6 +785,9 @@ function parseHeader(body, lineNo) {
   if (fields.length > 7 && fields[7] !== "-" && fields[7] !== "") {
     header.generated = fields[7];
   }
+  if (fields.length > 8 && fields[8] !== "-" && fields[8] !== "") {
+    header.corpus = fields[8];
+  }
   return header;
 }
 function parseRow(body, columns, lineNo) {
@@ -775,85 +823,6 @@ function resolveRows(rows, columns, dict) {
       row[i] = unescapeCell(escaped);
     }
   }
-}
-
-// packages/factspack/src/chain.ts
-function keyOf(row, keyIndex, where) {
-  const k = row[keyIndex];
-  if (k === null || k === void 0) {
-    throw new Error(`computeDiff/applyChain: null primary key at column ${keyIndex} in ${where}`);
-  }
-  return k;
-}
-function serializeRow(row) {
-  return row.map((c) => c === null ? "\0" : c).join("");
-}
-function computeDiff(prev, next, opts = {}) {
-  const ki = opts.keyIndex ?? 0;
-  const out = [];
-  const names = /* @__PURE__ */ new Set([...prev.tables.keys(), ...next.tables.keys()]);
-  for (const name of names) {
-    const p = prev.tables.get(name);
-    const n = next.tables.get(name);
-    if (n && !p) {
-      if (n.rows.length > 0) {
-        out.push({ name, columns: n.columns, addedRows: n.rows.map((r) => r.slice()), deletedIds: [] });
-      }
-      continue;
-    }
-    if (p && !n) {
-      const deletedIds2 = p.rows.map((r) => keyOf(r, ki, `prev.${name}`));
-      if (deletedIds2.length > 0) out.push({ name, columns: p.columns, addedRows: [], deletedIds: deletedIds2 });
-      continue;
-    }
-    if (!p || !n) continue;
-    const prevByKey = /* @__PURE__ */ new Map();
-    for (const r of p.rows) prevByKey.set(keyOf(r, ki, `prev.${name}`), serializeRow(r));
-    const addedRows = [];
-    const deletedIds = [];
-    const seen = /* @__PURE__ */ new Set();
-    for (const r of n.rows) {
-      const k = keyOf(r, ki, `next.${name}`);
-      seen.add(k);
-      const prevSer = prevByKey.get(k);
-      if (prevSer === void 0) {
-        addedRows.push(r.slice());
-      } else if (prevSer !== serializeRow(r)) {
-        addedRows.push(r.slice());
-        deletedIds.push(k);
-      }
-    }
-    for (const r of p.rows) {
-      const k = keyOf(r, ki, `prev.${name}`);
-      if (!seen.has(k)) deletedIds.push(k);
-    }
-    if (addedRows.length > 0 || deletedIds.length > 0) {
-      out.push({ name, columns: n.columns, addedRows, deletedIds });
-    }
-  }
-  return out;
-}
-function applyChain(master, diffs, opts = {}) {
-  const ki = opts.keyIndex ?? 0;
-  const tables = /* @__PURE__ */ new Map();
-  for (const [name, t] of master.tables) {
-    tables.set(name, { columns: t.columns, rows: t.rows.map((r) => r.slice()) });
-  }
-  for (const diff of diffs) {
-    for (const [name, dt] of diff.tables) {
-      let t = tables.get(name);
-      if (!t) {
-        t = { columns: dt.columns, rows: [] };
-        tables.set(name, t);
-      }
-      if (dt.deletedIds.length > 0) {
-        const del = new Set(dt.deletedIds);
-        t.rows = t.rows.filter((r) => !del.has(keyOf(r, ki, `applied.${name}`)));
-      }
-      for (const r of dt.addedRows) t.rows.push(r.slice());
-    }
-  }
-  return tables;
 }
 
 // packages/factspack/src/canonicalize.ts
@@ -972,15 +941,99 @@ function encodeAuto(opts) {
   const header = opts.canonical ? canonicalHeader(opts.header, tables) : opts.header;
   return opts.meta !== void 0 ? encode({ header, tables, meta: opts.meta }) : encode({ header, tables });
 }
+
+// ../../facts-pack/test/_chain.ts
+function keyOf(row, keyIndex, where) {
+  const k = row[keyIndex];
+  if (k === null || k === void 0) {
+    throw new Error(`computeDiff/applyChain: null primary key at column ${keyIndex} in ${where}`);
+  }
+  return k;
+}
+function serializeRow(row) {
+  return JSON.stringify(row);
+}
+function computeDiff2(prev, next, opts = {}) {
+  const ki = opts.keyIndex ?? 0;
+  const out = [];
+  const names = /* @__PURE__ */ new Set([...prev.tables.keys(), ...next.tables.keys()]);
+  for (const name of names) {
+    const p = prev.tables.get(name);
+    const n = next.tables.get(name);
+    if (n && !p) {
+      if (n.rows.length > 0) {
+        out.push({ name, columns: n.columns, addedRows: n.rows.map((r) => r.slice()), deletedIds: [] });
+      }
+      continue;
+    }
+    if (p && !n) {
+      const deletedIds2 = p.rows.map((r) => keyOf(r, ki, `prev.${name}`));
+      if (deletedIds2.length > 0) out.push({ name, columns: p.columns, addedRows: [], deletedIds: deletedIds2 });
+      continue;
+    }
+    if (!p || !n) continue;
+    const prevByKey = /* @__PURE__ */ new Map();
+    for (const r of p.rows) {
+      const pk = keyOf(r, ki, `prev.${name}`);
+      if (prevByKey.has(pk)) throw new Error(`computeDiff: duplicate primary key "${pk}" in prev.${name} \u2014 the PK column must be unique for a sound diff`);
+      prevByKey.set(pk, serializeRow(r));
+    }
+    const addedRows = [];
+    const deletedIds = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const r of n.rows) {
+      const k = keyOf(r, ki, `next.${name}`);
+      if (seen.has(k)) throw new Error(`computeDiff: duplicate primary key "${k}" in next.${name} \u2014 the PK column must be unique`);
+      seen.add(k);
+      const prevSer = prevByKey.get(k);
+      if (prevSer === void 0) {
+        addedRows.push(r.slice());
+      } else if (prevSer !== serializeRow(r)) {
+        addedRows.push(r.slice());
+        deletedIds.push(k);
+      }
+    }
+    for (const r of p.rows) {
+      const k = keyOf(r, ki, `prev.${name}`);
+      if (!seen.has(k)) deletedIds.push(k);
+    }
+    if (addedRows.length > 0 || deletedIds.length > 0) {
+      out.push({ name, columns: n.columns, addedRows, deletedIds });
+    }
+  }
+  return out;
+}
+function applyChain2(master, diffs, opts = {}) {
+  const ki = opts.keyIndex ?? 0;
+  const tables = /* @__PURE__ */ new Map();
+  for (const [name, t] of master.tables) {
+    tables.set(name, { columns: t.columns, rows: t.rows.map((r) => r.slice()) });
+  }
+  for (const diff of diffs) {
+    for (const [name, dt] of diff.tables) {
+      let t = tables.get(name);
+      if (!t) {
+        t = { columns: dt.columns, rows: [] };
+        tables.set(name, t);
+      }
+      if (dt.deletedIds.length > 0) {
+        const del = new Set(dt.deletedIds);
+        t.rows = t.rows.filter((r) => !del.has(keyOf(r, ki, `applied.${name}`)));
+      }
+      for (const r of dt.addedRows) t.rows.push(r.slice());
+    }
+  }
+  return tables;
+}
 export {
   PackDecodeError,
   PackEncodeError,
   PackEscapeError,
   STRICT_DEFAULT_LIMITS,
-  applyChain,
+  applyChain2 as applyChain,
   canonicalizeNumber,
   canonicalizePath,
-  computeDiff,
+  computeDiff2 as computeDiff,
   decode,
   decodeLegacy,
   decodeStrict,
@@ -989,5 +1042,6 @@ export {
   encodeIncremental,
   escapeCell,
   isInternedColumn,
+  sha256hex,
   unescapeCell
 };

@@ -31,6 +31,8 @@ DOC_PAGES = [
     "next-steps.v2.html",
     "v0.index.html",
     "v1.editorial.index.html",
+    "comparison-grid.html",
+    "status.html",
     "eli5/caveman/index.html",
 ]
 
