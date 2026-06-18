@@ -4,25 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FactsPack (.pack): token-efficient data format for AI agents</title>
-<meta name="description" content="An open, token-efficient data format for AI agents: the same structured data at ~1/5 the token cost of JSON. Paste data, get a .pack, free, in the browser. By Aditya Mishra.">
+<meta name="description" content="An open, token-efficient data format for AI agents: the same structured data in about 38% fewer tokens than JSON (up to 54% vs HTML), measured. Paste data, get a .pack, free, in the browser. By Aditya Mishra.">
 <meta name="author" content="Aditya Mishra">
 <link rel="canonical" href="https://o0am.github.io/facts.pack/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://o0am.github.io/facts.pack/">
 <meta property="og:site_name" content="FactsPack">
 <meta property="og:title" content="FactsPack (.pack): token-efficient data format for AI agents">
-<meta property="og:description" content="Same structured data, roughly one-fifth the token cost of JSON. Paste data, get a .pack plus the prompt that teaches any agent to read it.">
+<meta property="og:description" content="Same structured data, a measured ~38% fewer tokens than JSON (up to 54% vs HTML). Paste data, get a .pack plus the prompt that teaches any agent to read it.">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="FactsPack (.pack): token-efficient data format for AI agents">
-<meta name="twitter:description" content="Same structured data, ~1/5 the token cost of JSON. Free converter, runs in your browser.">
+<meta name="twitter:description" content="Same structured data, a measured ~38% fewer tokens than JSON (up to 54% vs HTML). Free converter, runs in your browser.">
 <meta name="theme-color" content="#15161e">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f9fa">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a1b26'/%3E%3Ctext x='32' y='46' font-family='monospace' font-size='40' font-weight='700' fill='%23e0af68' text-anchor='middle'%3E%23%3C/text%3E%3C/svg%3E">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"WebSite","@id":"https://o0am.github.io/facts.pack/#site","url":"https://o0am.github.io/facts.pack/","name":"FactsPack","publisher":{"@id":"https://o0am.github.io/facts.pack/#author"}},
-{"@type":"SoftwareSourceCode","@id":"https://o0am.github.io/facts.pack/#spec","name":"FactsPack (.pack) format specification","alternateName":".pack","description":"A line-oriented, tab-separated, token-efficient text format for streaming structured data to LLM agents at roughly one-fifth the token cost of JSON.","codeRepository":"https://github.com/O0AM/facts.pack","programmingLanguage":"TypeScript","license":"https://www.gnu.org/licenses/agpl-3.0.html","version":"0.2","datePublished":"2026-06-12","author":{"@id":"https://o0am.github.io/facts.pack/#author"},"keywords":"token-efficient format, LLM, AI agents, JSON alternative, prompt caching, serialization, wire format"},
+{"@type":"SoftwareSourceCode","@id":"https://o0am.github.io/facts.pack/#spec","name":"FactsPack (.pack) format specification","alternateName":".pack","description":"A line-oriented, tab-separated, token-efficient text format for streaming structured data to LLM agents at a measured ~38% lower token cost than JSON (up to 54% vs HTML tables).","codeRepository":"https://github.com/O0AM/facts.pack","programmingLanguage":"TypeScript","license":"https://www.gnu.org/licenses/agpl-3.0.html","version":"0.3","datePublished":"2026-06-12","author":{"@id":"https://o0am.github.io/facts.pack/#author"},"keywords":"token-efficient format, LLM, AI agents, JSON alternative, prompt caching, serialization, wire format"},
 {"@type":"WebApplication","name":"FactsPack converter","url":"https://o0am.github.io/facts.pack/#convert","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser-based)","browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@id":"https://o0am.github.io/facts.pack/#author"}},
 {"@type":"Person","@id":"https://o0am.github.io/facts.pack/#author","name":"Aditya Mishra","email":"mailto:adityamishra1477@gmail.com","url":"https://github.com/O0AM"}
 ]}
@@ -254,14 +254,14 @@
   <div class="app">
     <h1>Your AI agent pays for every token.<br>Feed it <span class="hl">.pack</span> instead.</h1>
     <p class="sub">FactsPack is an <b>open, plain-text format</b> any LLM can read cold: same data,
-      roughly <b>one-fifth the JSON bill</b>. Paste anything below, get a <b>.pack</b> plus the
+      about <b>38% fewer tokens than JSON</b> (up to half vs HTML, far less at scale). Paste anything below, get a <b>.pack</b> plus the
       prompt that teaches any coding agent to read it. Free, instant, runs entirely in your browser.</p>
     <div class="cta-row">
       <a class="btn primary" href="#convert">⚡ Make me a .pack</a>
       <a class="btn" href="https://github.com/O0AM/facts.pack">View source on GitHub</a>
       <a class="btn" href="#playground">🎚️ Estimate my savings</a>
     </div>
-    <p class="byline">Invented by <b>Aditya Mishra</b> · Public spec v0.2 · v0.3 in progress · AGPL-3.0 ·
+    <p class="byline">Invented by <b>Aditya Mishra</b> · Public spec v0.3 · AGPL-3.0 ·
       <a href="https://github.com/O0AM/facts.pack">GitHub</a></p>
 
     <div class="card chart" id="hero-chart">
@@ -546,7 +546,8 @@
               <td>The prose fix-pack: graded audit (A · 93/100), 5 failing checkpoints with locations, snippets, fixes.</td></tr>
         </table>
         <p>The two tabular samples are <code>agent-v3</code> archives (v0.1-era wire, before
-          <code>;</code> meta lines), so they carry no legend or trailer; <code>agent-v4</code> adds those.</p>
+          <code>;</code> meta lines), so they carry no legend or trailer; <code>agent-v4</code> added those,
+          and the current <code>agent-v5</code> wire adds opt-in typed columns and a corpus tag.</p>
       </div>
     </details>
 
@@ -659,15 +660,16 @@
       specified by <b style="color:var(--accent)">Aditya Mishra</b>
       (<a href="mailto:adityamishra1477@gmail.com">adityamishra1477@gmail.com</a>) as part of the
       FACTs (Fun AI Coding Tools) project family. v0.1 design-locked 24 April 2026; v0.2
-      specified and implemented June 2026; v0.3 (in progress) hardens data integrity — colliding
+      specified and implemented June 2026; v0.3 shipped June 2026 — the agent-v5 wire (opt-in
+      typed columns, corpus tag), a master/diff chain, and hardened data integrity: colliding
       column names are now suffixed (e.g. name → name_2) so two source fields stay distinct
       end-to-end.</p>
     <div class="cite">Mishra, A. (2026). <i>FactsPack (.pack): a token-efficient, agent-first wire
-      format for structured data.</i> Standard v0.2.</div>
+      format for structured data.</i> Standard v0.3.</div>
     <div class="foot-meta">
       <span>© 2026 Aditya Mishra</span>
       <span><a href="https://github.com/O0AM/facts.pack/blob/main/LICENSE">AGPL-3.0</a> · <a href="mailto:adityamishra1477@gmail.com?subject=FactsPack%20commercial%20license">dual-license available</a></span>
-      <span>Standard v0.2 · agent-v4 · v0.3 in progress</span>
+      <span>Standard v0.3 · agent-v5 wire · master/diff chain</span>
       <span><a href="https://github.com/O0AM/facts.pack/blob/main/CITATION.cff">CITATION.cff</a></span>
     </div>
     <p style="font-size:.8rem;margin-top:16px">AI agent? Start at <a href="llms.txt">llms.txt</a>.</p>

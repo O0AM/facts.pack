@@ -4,8 +4,10 @@ type: software
 title: "FactsPack (.pack): a token-efficient, agent-first wire format for structured data"
 abstract: >-
   FactsPack is a line-oriented, UTF-8, tab-separated text format for
-  streaming structured tabular data to AI agents at roughly one-fifth the
-  token cost of JSON. It combines schema-once positional rows, in-band
+  streaming structured tabular data to AI agents at materially lower
+  token cost than JSON — a measured reduction of roughly 38% versus
+  records-JSON and up to 54% versus HTML tables on real repositories,
+  growing with scale. It combines schema-once positional rows, in-band
   dictionary interning of repeated strings, multi-table streams,
   incremental add/delete rows, hash-linked master/diff chains tuned for
   LLM prompt-cache economics, an in-band plain-language legend for cold
@@ -16,8 +18,8 @@ authors:
     given-names: Aditya
     email: adityamishra1477@gmail.com
     affiliation: "FACTs (Fun AI Coding Tools) project"
-version: "0.2"
-date-released: 2026-06-12
+version: "0.3"
+date-released: 2026-06-16
 license: AGPL-3.0
 keywords:
   - file-format

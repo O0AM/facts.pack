@@ -1218,9 +1218,16 @@
     <a href="index.html" class="back-link">⬅ ️Back to main explainer</a>
     <div><span class="ext">FactsPack v0.3 — Roadmap, adversarially reviewed</span></div>
     <h1>Fix the <em>contract</em> first.</h1>
-    <p class="tagline">FactsPack combines schema-once tabular streams with dictionary interning. This roadmap toward v0.3 / agent-v5 has been adversarially reviewed three ways — by Claude, Codex, and Antigravity. The review found the v0.2 foundation has contract bugs the roadmap was about to build on. The honest path: repair the contract, prove the core claim with a real benchmark, then add features one measured delta at a time.</p>
+    <p class="tagline">FactsPack combines schema-once tabular streams with dictionary interning. This roadmap that delivered v0.3 / agent-v5 was adversarially reviewed three ways — by Claude, Codex, and Antigravity. The review found the v0.2 foundation has contract bugs the roadmap was about to build on. The honest path: repair the contract, prove the core claim with a real benchmark, then add features one measured delta at a time.</p>
   </div>
 </header>
+
+<div class="wrap" style="margin-top:18px">
+  <div role="note" style="border:1px solid #2e7d52;background:rgba(46,125,82,.12);border-radius:12px;padding:16px 18px">
+    <strong style="color:#3fb968">Update · June 2026 — v0.3 has since shipped.</strong>
+    <p style="margin:8px 0 0">This page is the dated review record that <em>preceded</em> the release. Since 2026-06-13: the Gate-0 contract repairs landed; byte-determinism is proven and shipped (canonical POSIX paths, content-addressed snapshot id); the <strong>agent-v5</strong> wire (opt-in typed columns, corpus tag, <code>; caps/types/gschema</code>) and the <strong>master/diff chain</strong> (~84% smaller diff in the measured case) are implemented and tested; and the <strong>P0.1 benchmark</strong> has been run — <strong>~38% fewer tokens than records-JSON</strong> (up to 54% vs HTML) and <strong>98.2% retrieval accuracy</strong> tied with JSON in a single-model pilot (Claude Sonnet 4.6, 8 repos), with the ≥3-model benchmark still pending. Read the "Unknown / pending" states below as the open questions <em>at review time</em> — now largely answered on the <a href="index.html">live page</a>.</p>
+  </div>
+</div>
 
 <section id="verdict">
   <div class="wrap">
@@ -1807,7 +1814,7 @@
     <div class="footer-inner">
       <span>© 2026 Aditya Mishra · FactsPack Developer</span>
       <span>License: AGPL-3.0</span>
-      <span>Proposed Standard: v0.2 ➔ v0.3</span>
+      <span>Standard: v0.3 shipped · agent-v5 wire</span>
     </div>
   </div>
 </footer>

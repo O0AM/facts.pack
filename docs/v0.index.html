@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>FactsPack (.pack) — a token-efficient, agent-first data format</title>
-<meta name="description" content="FactsPack (.pack) is a line-oriented text format that streams structured tabular data to AI agents at ~1/5 the token cost of JSON. Invented by Aditya Mishra.">
+<meta name="description" content="FactsPack (.pack) is a line-oriented text format that streams structured tabular data to AI agents using ~38% fewer tokens than records-JSON (more on high-repetition codebase maps). Archived v0 edition. Invented by Aditya Mishra.">
 <meta name="author" content="Aditya Mishra">
 <style>
   :root{
@@ -153,17 +153,28 @@
 
 <button id="theme-toggle">☀️ Light Mode</button>
 
+<div style="max-width:920px;margin:18px auto 0;padding:0 24px">
+  <div role="note" style="border:1px solid #e0af68;background:rgba(224,175,104,.12);border-radius:12px;padding:14px 16px;color:#c0caf5;font-size:.95rem;line-height:1.5">
+    <strong style="color:#e0af68">📦 Archived v0 edition.</strong> This page describes the older
+    <b>v0.2</b> standard. The current standard is <b>v0.3</b> (agent-v5 wire) — see the
+    <a href="index.html" style="color:#e0af68">live page</a>. The token figures below are the author's
+    high-repetition best case; the measured pooled saving is about <b>38% fewer tokens than records-JSON</b>
+    (up to 54% vs HTML).
+  </div>
+</div>
+
 <header>
   <div class="wrap" style="position:relative;">
-    <span class="ext">.pack — FactsPack standard v0.2</span>
+    <span class="ext">.pack — FactsPack v0.2 · archived edition</span>
     <h1>Structured data your AI agent<br>can afford to read.<span class="dim"></span></h1>
     <p class="tagline"><b>FactsPack</b> is a line-oriented text format that streams tabular data
-      to LLM agents at roughly <b>one-fifth the token cost of JSON</b> — while staying
-      human-readable, append-friendly, self-describing, and tamper-evident.</p>
+      to LLM agents at a fraction of JSON's token cost — about <b>38% fewer tokens than records-JSON</b>
+      (far more on high-repetition codebase maps) — while staying human-readable, append-friendly,
+      self-describing, and tamper-evident.</p>
     <p class="byline">Invented &amp; authored by <b>Aditya Mishra</b> · Open source under AGPL-3.0</p>
     <div class="stats">
-      <div class="stat"><div class="n">−81%</div><div class="l">tokens vs JSON · 5k symbols</div></div>
-      <div class="stat"><div class="n">−91%</div><div class="l">tokens vs JSON · 10k imports</div></div>
+      <div class="stat"><div class="n">−81%</div><div class="l">vs JSON · 5k symbols (best case)</div></div>
+      <div class="stat"><div class="n">−91%</div><div class="l">vs JSON · 10k imports (best case)</div></div>
       <div class="stat"><div class="n">7</div><div class="l">line types — the whole grammar</div></div>
       <div class="stat"><div class="n">8 lines</div><div class="l">of preamble teach any LLM</div></div>
     </div>

@@ -1,12 +1,12 @@
 # The `.pack` Format — A User's Guide
 
 > **FactsPack** (file extension `.pack`) is a line-oriented text format for
-> streaming structured tabular data to AI agents at roughly **one-fifth the
-> token cost of JSON**, while staying human-readable, append-friendly, and
-> self-describing.
+> streaming structured tabular data to AI agents at **about 38% fewer tokens
+> than JSON** (up to 54% vs HTML tables, and far less at scale), while staying
+> human-readable, append-friendly, and self-describing.
 >
 > **Invented and authored by [Aditya Mishra](mailto:adityamishra1477@gmail.com).**
-> Standard version: **v0.2** · License: **AGPL-3.0** · Canonical spec:
+> Standard version: **v0.3** · License: **AGPL-3.0** · Canonical spec:
 > [`FACTSPACK.md`](../FACTSPACK.md)
 
 This guide is the friendly front door. It teaches you to *read* a `.pack`
@@ -14,8 +14,7 @@ file in five minutes, walks through real sample files shipped in this
 repository, and honestly positions the format against everything that came
 before it. The normative specification lives in
 [`FACTSPACK.md`](../FACTSPACK.md); a paste-ready LLM prompt lives in
-[`FACTSPACK_PROMPT.md`](../FACTSPACK_PROMPT.md); a visual/diagram companion
-lives in [`PACK_VISUAL_MODEL.md`](../PACK_VISUAL_MODEL.md).
+[`FACTSPACK_PROMPT.md`](../FACTSPACK_PROMPT.md).
 
 ---
 
@@ -24,7 +23,9 @@ lives in [`PACK_VISUAL_MODEL.md`](../PACK_VISUAL_MODEL.md).
 When an AI agent asks a tool for 5,000 symbol records, a JSON response
 repeats every key (`"id"`, `"kind"`, `"name"`, `"file"`, `"line"`) and every
 quoted file path on every record — about 150,000 tokens. The same data as a
-`.pack` is about 28,000 tokens. Same information, **81% cheaper**.
+`.pack` is about 28,000 tokens: roughly **81% cheaper in this high-repetition
+best case**. Across ~20 real repositories the pooled saving is about **38% vs
+records-JSON** (up to 54% vs HTML); see §10.5 for the honest, measured numbers.
 
 `.pack` does three things to get there:
 
@@ -207,7 +208,8 @@ The full paste-ready version (decode *and* encode rules) is
 The standard has one set of laws and two body shapes:
 
 **Tabular profile** — the grammar above. Used by **factstack** for its
-codebase map (`agent.pack`, wire tag `agent-v4`: 13 tables — ranked `top`
+codebase map (`agent.pack`, wire tag `agent-v4`; the current `agent-v5` wire
+adds opt-in typed columns and a corpus tag on top): 13 tables — ranked `top`
 head, files, imports, routes, risks, envs, declarations, symbols, calls,
 nodeMetrics, rationale, entities, entityEdges).
 
@@ -271,10 +273,12 @@ agent consumption.
 
 > **Version note:** the two tabular samples are **agent-v3** archives —
 > v0.1-era wire that predates the `;` meta lines, so you won't see a legend
-> or trailer in them. v0.2 packs (wire tag `agent-v4`) add the in-band
-> legend, `; hot:` hints, the integrity trailer, a unified file-id
-> namespace, relative-day timestamps, and the chain header fields. The
-> migration story is in [`MIGRATION-v0.2.md`](../MIGRATION-v0.2.md).
+> or trailer in them. The `agent-v4` (v0.2) wire added the in-band legend,
+> `; hot:` hints, the integrity trailer, a unified file-id namespace,
+> relative-day timestamps, and the chain header fields; the current
+> **`agent-v5`** wire (v0.3) layers opt-in typed columns and a corpus tag on
+> top, and v0.1/v0.2 readers still parse a v0.3 pack. Wire-tag evolution is
+> documented in [`FACTSPACK.md`](../FACTSPACK.md).
 
 ## 10. How `.pack` compares to other formats
 
@@ -342,23 +346,29 @@ with the tabular row layer, precisely because the row layer is well-trodden.
 
 ### 10.5 An honest word on the token numbers
 
-The headline "≈ one-fifth the tokens of JSON" (and the −81% / −91% figures in
-§3) are the **author's own measurements** on FACTs payloads, not yet an
-independent benchmark. For calibration: published third-party measurements of
-*schema-once* LLM formats land lower — roughly 28–40% savings vs JSON (TOON
-~40%, JTON ~28.5%, TRON ~31%), and only raw CSV on very flat data approaches
-80%. FactsPack reaches the high end **because three savings stack**: dropping
-JSON's per-row keys/punctuation (the part those formats also do), **interning
-heavy repeated strings** like file paths (most don't), and **shipping deltas
-instead of whole tables** on refresh (none do). The figure is therefore
-believable *for FactsPack's workload* (codebase maps, where paths repeat
-enormously) and weaker on data without repetition. If you adopt the format,
-**measure on your own payloads** rather than assuming 80% — and treat the
-numbers here as workload-specific, not universal. (One open risk worth naming:
-no third party has yet benchmarked LLM *comprehension accuracy* of
-dictionary-interned references — rows pointing at `@` ids across a long pack.
-The v0.2 in-band legend and `; hot:` hints are the mitigation; their
-effectiveness is plausible but unproven.)
+The headline figures are now backed by a measurement run, not just estimates.
+Across ~20 real repositories with production BPE tokenizers, `.pack` uses about
+**38% fewer tokens than records-JSON** (17.9% vs columnar JSON, 24.1% vs
+Markdown, 53.6% vs HTML), token-mass-weighted — the equal-weight per-repo mean
+is ~26% vs records-JSON. The larger −81% / −91% figures in §3 are **best-case
+author measurements** on high-repetition FACTs payloads (codebase maps where
+paths repeat enormously), not the pooled average. For calibration: published
+third-party measurements of *schema-once* LLM formats land in a similar band —
+roughly 28–40% vs JSON (TOON ~40%, JTON ~28.5%, TRON ~31%), and only raw CSV on
+very flat data approaches 80%. FactsPack reaches the high end **because three
+savings stack**: dropping JSON's per-row keys/punctuation (the part those
+formats also do), **interning heavy repeated strings** like file paths (most
+don't), and **shipping deltas instead of whole tables** on refresh (none do).
+The savings are therefore workload-specific — strong on codebase maps, weaker
+on data without repetition, and a fixed legend/trailer overhead means `.pack`
+can be *larger* than JSON on tiny inputs. If you adopt the format, **measure on
+your own payloads**. On the comprehension question — can a model still answer
+correctly from interned `@` references? — a single-model pilot (Claude Sonnet
+4.6, 8 repos, 111 ground-truth questions per format) found `.pack` matches JSON
+at 98.2% accuracy, the most correct answers per token; a publication-grade
+≥3-model benchmark is still pending. The in-band legend and `; hot:` hints are
+the mitigation, and the pilot suggests they work — but the independent,
+multi-model study remains future work.
 
 ### 10.6 Name and extension: what `.pack` collides with
 
@@ -441,7 +451,7 @@ Contributions" section.
 To cite the format, see [`CITATION.cff`](../CITATION.cff), or:
 
 > Mishra, A. (2026). *FactsPack (.pack): a token-efficient, agent-first
-> wire format for structured data.* Standard v0.2.
+> wire format for structured data.* Standard v0.3.
 
 ## 13. Further reading
 
@@ -449,7 +459,4 @@ To cite the format, see [`CITATION.cff`](../CITATION.cff), or:
 |---|---|
 | [`FACTSPACK.md`](../FACTSPACK.md) | The canonical specification (normative, §1–§17) |
 | [`FACTSPACK_PROMPT.md`](../FACTSPACK_PROMPT.md) | Paste-ready prompt: teach any LLM to decode and emit PACK |
-| [`PACK_VISUAL_MODEL.md`](../PACK_VISUAL_MODEL.md) | Diagrams: pipeline, parser decision tree, cache economics |
-| [`PACK-V0.2-PLAN.md`](../PACK-V0.2-PLAN.md) | The v0.2 build plan and design-decision traceability |
-| [`MIGRATION-v0.2.md`](../MIGRATION-v0.2.md) | Migrating v0.1/agent-v3 producers and consumers to v0.2 |
 | [`research/`](../research/) | Design notes, adversarial reviews, real-world evaluations |
