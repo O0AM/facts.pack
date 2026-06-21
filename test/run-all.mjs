@@ -1,18 +1,12 @@
 /**
  * run-all.mjs — one entry point for the whole FactsPack test battery.
  *
- * Nine suites, two languages, one exit code:
- *   1. validate.mjs    — shipped web engine round-tripped through the reference decoder (strict)
- *   2. languages.mjs   — map-mode round-trips for Go/Rust/Java/CSS/HTML vs the decoder
- *   3. oracle.mjs      — independent EXACT round-trip oracle (no shared normalization; U4)
- *   4. conformance.mjs — Gate 1: in-process determinism, golden vectors, canonical round-trip,
- *                        cross-encoder semantic parity, inlined-codec drift guard
- *   5. parity.mjs      — the browser's inlined encoder === the reference codec, byte-for-byte
- *   6. grounding.mjs   — the v0.2a contract repair, proven against observable bytes + experiments
- *   7. security.mjs    — codec injection/integrity/parser defenses + web-app hardening,
- *                        with residual consumer-side gaps flagged (not failed)
- *   8. webapp/test_next_steps_v2.py — the v2 review page's interactive behaviour (Playwright)
- *   9. webapp/test_landing_app.py   — the shipped converter app + reachable pages (Playwright)
+ * The full battery: the Node suites in `nodeSuites` plus the Playwright suites in `pySuites`
+ * (below) are the single source of truth. They cover the wire round-trip + independent oracle,
+ * Gate-1 determinism + drift guards, browser-vs-reference byte parity, the master/diff chain
+ * and its producer, SCIP-style position-free monikers, the agent-v5 wire, the v0.2a contract
+ * grounding, codec + web-app security, and the shipped web pages. The numbering printed at run
+ * time is DERIVED from those arrays, so adding a suite can never desync the labels.
  *
  * Codec changes live upstream (../claude/factstack); regenerate the vendored bundle with
  * `node test/build-bundle.mjs` and the example fixtures with `node test/build-fixtures.mjs`.
@@ -57,6 +51,10 @@ const nodeSuites = [
   ['conformance.mjs', 'Gate 1 conformance — determinism, golden vectors, parity'],
   ['parity.mjs', 'browser inlined codec === reference codec (byte parity)'],
   ['chain.mjs', 'master/diff chain: exact diff/apply reconstruction + cache economics'],
+  ['chainproducer.mjs', 'chain PRODUCER: store + .pack manifest + coalescing + tamper detection'],
+  ['ioadapter.mjs', 'chain io ADAPTER seam: both adapters (in-memory + disk) honour the contract'],
+  ['moniker.mjs', 'SCIP-style position-free monikers: stable symbol identity so a code MOVE is a no-op diff'],
+  ['symbolchain.mjs', 'moniker→chain integration: addSymbols enforces the lite-safety re-index + ; caps emission'],
   ['agentv5.mjs', 'agent-v5 wire: typed & tokens, corpus field, self-describing ; lines'],
   ['grounding.mjs', 'v0.2a contract repair, proven vs observable bytes'],
   ['security.mjs', 'codec + web-app security regression'],

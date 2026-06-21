@@ -7,8 +7,8 @@
 > encoder/decoder ship in factstack `packages/factspack`
 > (a vitest conformance suite, including a deterministic fuzz) and the agent map
 > ships as schema **`agent-v4`**; the immutable
-> master/diff chain (§17) is specified but its pipeline wiring is the next
-> workstream. Last revised: 2026-06-12. Build plan: `planning/PACK-V0.2-PLAN.md`;
+> master/diff chain (§17) is implemented end-to-end, including its producer
+> pipeline (`tools/chain`). Last revised: 2026-06-19. Build plan: `planning/PACK-V0.2-PLAN.md`;
 > migration: `planning/MIGRATION-v0.2.md` (this folder).
 >
 > v0.1 history: design-locked 2026-04-24 as "Schema version 1"; implemented
@@ -515,7 +515,7 @@ governs the **artifact files** the analyzers write.
   field. This is what makes "skip when unchanged" decidable and prompt-cache
   prefixes stable.
 
-## 17. Chains: master + diff packs (engine implemented; producer pipeline is the next workstream)
+## 17. Chains: master + diff packs (engine + producer pipeline implemented)
 
 - **Engine (implemented).** `computeDiff(prev, next)` and `applyChain(master, diffs)`
   operate on DECODED packs (dictionary keys are per-pack, so rows are matched by their
@@ -529,24 +529,42 @@ governs the **artifact files** the analyzers write.
   of rows change the diff exceeds the master and the producer should re-send the
   master (the coalescing trigger below). The PK column must be unique for a sound
   diff (`computeDiff` throws on a duplicate primary key).
-- **Layout:** `.facts/pack/master.<seq>.pack`,
-  `.facts/pack/<seq>.<shortsha>.pack-diff`, and `.facts/pack/latest` (a tiny
-  manifest naming the current master and the ordered diffs; rewritten
-  atomically). Until the chain ships, producers emit `seq=1 parent=- kind=master`
-  and write the single `.facts/agent.pack` (which remains as a compatibility
-  alias afterwards).
-- **Diffs are freshness; masters are compaction.** Emit a `.pack-diff` per
-  commit (post-commit hook) and per agent checkpoint. Rebuild the master
-  when the chain exceeds ~30% of master rows, or ~20 diffs, or explicitly,
-  or when idle — never on a wall-clock timer, and skip entirely when no
-  content changed.
+- **Producer pipeline (implemented — `tools/chain`).** A `ChainStore` maintains a chain
+  over time against a small I/O adapter (disk, or in-memory for tests). On each new full
+  snapshot it reconstructs the current head, computes the diff against it, and — per the
+  coalescing policy — appends a diff or re-masters, then rewrites the manifest. Driven by
+  `tools/chain/cli.mjs` (`add` / `head` / `verify` / `manifest` / `prune`) and an opt-in
+  `post-commit` hook sample; an opt-in `autoPrune` reclaims files orphaned by a re-master
+  immediately (default off keeps the full history). The `io` adapter is a documented seam
+  (`read`/`write`/`list`/`remove`) with two shipped adapters — disk (`tools/chain/node-io.mjs`)
+  and in-memory — both gated by a conformance suite. Coalescing (`coalesceRatio`/`maxChainLen`)
+  is constructor policy, not a per-snapshot knob. Proven by `test/chainproducer.mjs` +
+  `test/ioadapter.mjs`.
+- **Layout.** A chain directory holds `<seq>.master.pack`, `<seq>.diff.pack`, and a
+  `manifest.pack`. The manifest is itself a self-sealed `.pack` — a `chain` table of
+  `seq, kind, file, sha, parent, rows` rows — so the chain describes itself in its own
+  format and its trailer seals the link list. The manifest names the ACTIVE chain (the
+  current master, then the diffs on top of it); a re-master starts a fresh manifest.
+- **Coalescing (tunable policy, NOT a measured-optimal constant).** Re-master instead of
+  diffing once the diff reaches `coalesceRatio` (default 0.5) of a fresh full snapshot —
+  grounded in the measured break-even (a diff carries delete+add per changed row, so past
+  ~40–50% changed rows it exceeds the master) — or once the chain passes `maxChainLen`
+  diffs (default 24, bounding a consumer's apply cost). Both are knobs; the right values
+  come from a chain-depth measurement, not a guessed file count. A snapshot identical to
+  the head is a no-op.
+- **Soundness scope.** A diff is sound only when the column-1 PRIMARY KEY is stable across
+  snapshots. That holds for path-keyed / file-level tables today; symbol tables whose ids
+  derive from line numbers churn — stable identity for those is the SCIP-moniker work
+  (§18, analyzer side) and drops in later via `keyIndex`.
 - **Session pinning (consumer obligation).** A session resolves `latest`
   once, pins that master + chain for its lifetime, and appends newer diffs
   only — context layout `[master][diff…][conversation]` extends the prompt
   cache instead of invalidating it. New sessions adopt the newest master;
   unpinned masters are pruned (keep the last ~3 chains).
-- **Chain integrity.** Each pack names its `parent` hash (§4.1); a reader
-  that cannot fetch a link MUST refuse to reconstruct state.
+- **Chain integrity (verifiable).** Each diff's `parent` (§4.1) is the prior link's trailer
+  sha and the manifest records every link's sha, so `verify()` rejects a tampered or
+  reordered link (the hash chain breaks). A reader that cannot fetch a link MUST refuse to
+  reconstruct state.
 
 ## 18. agent-v5 — the richer wire profile (opt-in; v0.2 stays the default)
 
@@ -585,11 +603,25 @@ when to emit a v5 pack. v0.2 producers and the browser converter are unaffected.
   A machine-readable graph schema (`imports=edge(File-IMPORTS->File)`) so exporters and
   text2cypher/MCP query tools are zero-config. Preserved verbatim; the consumer interprets it.
 
-**Specified, generated by the analyzer (producer workstream, not the codec):** SCIP-style
-position-free symbol monikers (`path#Type.method().`) with dual `strict`/`lite` modes and
-structural disambiguators (so ids survive edits above them and diffs stay small);
-occurrence `role` column (def/ref/import/write/read) and `test`/`generated` flags;
-bi-temporal `asof` on `+`/`x` rows; the empty-cell sentinel (the v5 normalized profile
-renders empty-string cells explicitly, defusing the column-shift attack); and the
-accuracy tables (`communities`, `paths`, `externals`) GraphRAG-class results call for.
-These are emitted by the code analyzer; the format reserves their shapes here.
+**Symbol identity — the Lite moniker generator is implemented (`tools/moniker`,
+`test/moniker.mjs`).** SCIP-style position-free monikers (`src/auth.ts#AuthService.login(2).`)
+replace line-number ids, so a symbol survives edits above it and a pure code MOVE is a no-op
+diff (measured: a 500-line shift is an EMPTY moniker diff where line-ids re-index the whole
+table). Dual modes, declared via `; caps … moniker:strict|lite`: **strict** adopts a real
+SCIP index (authoritative — safe to key `+`/`x`); **lite** is heuristic with structural
+disambiguators (arity, container, export status, normalized signature) and is a
+non-authoritative hint — a collision it can only resolve by a fragile scope ordinal is flagged
+`confident:false`, so the chain re-indexes (a fresh master) rather than key a destructive delta
+on a probabilistic match. The line/col positions live in separate `start`/`end` data columns.
+The safe integration — `addSymbols()` in `tools/chain/symbols.mjs` — bundles
+assign→`chainSafe`→`store.add` so a non-chain-safe assignment is FORCED to re-index (the safe
+path is the only one) and emits the `; caps moniker:<mode>` self-declaration. Proven by
+`test/symbolchain.mjs` and validated at scale across 14 live GitHub repos (97,308 real symbols;
+`research/realworld-chain-moniker-test.mjs`).
+
+**Still specified, analyzer-generated (reserved shapes, not yet produced here):** the
+occurrence `role` column (def/ref/import/write/read) and `test`/`generated` flags; bi-temporal
+`asof` on `+`/`x` rows; the empty-cell sentinel (the v5 normalized profile renders empty-string
+cells explicitly, defusing the column-shift attack); and the accuracy tables (`communities`,
+`paths`, `externals`) GraphRAG-class results call for. These are emitted by the code analyzer;
+the format reserves their shapes here.

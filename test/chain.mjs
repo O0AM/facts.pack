@@ -12,14 +12,15 @@
  *
  * No model is needed: the cache win is a byte/token fact, measured here directly.
  */
-import { encode, encodeIncremental, decode, computeDiff, applyChain } from './factspack.bundle.mjs';
+import { encodeIncremental, decode, computeDiff, applyChain } from './factspack.bundle.mjs';
+import { makePack } from './_pack.mjs';
 import { ledger } from './_report.mjs';
 
 const L = ledger({ OK: '🔗', ECON: '📉', BROKEN: '❌' }, ['BROKEN']);
 const confirm = (id, claim, pass, detail, state = 'OK') => L.add(pass ? state : 'BROKEN', `[${id}] ${claim}`, detail);
 
-const H = (snap) => ({ producer: 'factspack-chain/0.1', schema: 'symbols-v1', snapshotId: snap, rowCount: null, kind: 'master' });
 const COLS = [{ name: 'id' }, { name: 'kind' }, { name: 'name' }, { name: 'F' }, { name: 'line' }];
+const master = (snap, rows) => makePack(snap, { producer: 'factspack-chain/0.1', schema: 'symbols-v1', table: 'symbols', columns: COLS, legend: 'symbols id kind name F line', rows });
 
 // A baseline map of 60 symbols across a few files.
 const FILES = ['src/auth.ts', 'src/users.ts', 'src/db.ts', 'src/api.ts'];
@@ -27,14 +28,14 @@ const baseRows = Array.from({ length: 60 }, (_, i) => [
   String(i), i % 3 === 0 ? 'fn' : i % 3 === 1 ? 'cls' : 'const',
   'sym_' + i, FILES[i % FILES.length], String(100 + i),
 ]);
-const masterPack = encode({ header: H('rev1'), meta: { legend: ['symbols id kind name F line'] }, tables: [{ name: 'symbols', columns: COLS, rows: baseRows }] });
+const masterPack = master('rev1', baseRows);
 
 // NEXT state: one symbol renamed (update), one removed (delete), two added.
 const nextRows = baseRows
   .filter((r) => r[0] !== '7')                                  // delete id 7
   .map((r) => (r[0] === '12' ? [r[0], r[1], 'sym_12_RENAMED', r[3], r[4]] : r)) // update id 12
   .concat([['60', 'fn', 'sym_60_new', 'src/auth.ts', '999'], ['61', 'cls', 'sym_61_new', 'src/api.ts', '1000']]); // add 60,61
-const nextMaster = encode({ header: H('rev2'), meta: { legend: ['symbols id kind name F line'] }, tables: [{ name: 'symbols', columns: COLS, rows: nextRows }] });
+const nextMaster = master('rev2', nextRows);
 
 const prevDec = decode(masterPack);
 const nextDec = decode(nextMaster);
@@ -63,7 +64,7 @@ confirm('CHAIN-exact', 'applyChain(master, [diff]) reconstructs the NEXT row set
 
 // ── 3. A multi-diff chain reconstructs the final state ──
 const rev3Rows = nextRows.concat([['62', 'fn', 'sym_62', 'src/db.ts', '1200']]);
-const rev3 = encode({ header: H('rev3'), meta: { legend: ['symbols id kind name F line'] }, tables: [{ name: 'symbols', columns: COLS, rows: rev3Rows }] });
+const rev3 = master('rev3', rev3Rows);
 const diff2 = encodeIncremental({
   header: { producer: 'factspack-chain/0.1', schema: 'symbols-v1', snapshotId: 'rev3', seq: 2, parent: 'rev2aaaaaaaa', kind: 'diff' },
   tables: computeDiff(nextDec, decode(rev3)),
@@ -81,8 +82,8 @@ confirm('ECON-bytes', `a 5-row change emits a diff far smaller than a fresh mast
 
 // ── 5. Duplicate primary keys are rejected (a sound diff needs unique PKs) ──
 {
-  const dup = encode({ header: H('d1'), meta: { legend: ['symbols id kind name F line'] }, tables: [{ name: 'symbols', columns: COLS, rows: [['1', 'fn', 'a', 'f.ts', '1'], ['1', 'fn', 'b', 'f.ts', '2']] }] });
-  const one = encode({ header: H('d2'), meta: { legend: ['symbols id kind name F line'] }, tables: [{ name: 'symbols', columns: COLS, rows: [['1', 'fn', 'a', 'f.ts', '1']] }] });
+  const dup = master('d1', [['1', 'fn', 'a', 'f.ts', '1'], ['1', 'fn', 'b', 'f.ts', '2']]);
+  const one = master('d2', [['1', 'fn', 'a', 'f.ts', '1']]);
   let threw = false, msg = '';
   try { computeDiff(decode(dup), decode(one)); } catch (e) { threw = true; msg = String((e && e.message) || e); }
   confirm('DUP-PK', 'computeDiff REJECTS a table with duplicate primary keys (a sound diff requires unique PKs)',
@@ -95,7 +96,7 @@ confirm('ECON-bytes', `a 5-row change emits a diff far smaller than a fresh mast
 // the producer should re-send the master. Measure both ends, claim only the truth.
 {
   const allChanged = baseRows.map((r) => [r[0], r[1], r[2] + '_x', r[3], r[4]]); // every row's content differs
-  const allNext = encode({ header: H('rAll'), meta: { legend: ['symbols id kind name F line'] }, tables: [{ name: 'symbols', columns: COLS, rows: allChanged }] });
+  const allNext = master('rAll', allChanged);
   const bigDiff = encodeIncremental({
     header: { producer: 'factspack-chain/0.1', schema: 'symbols-v1', snapshotId: 'rAll', seq: 9, parent: 'rev1aaaaaaaa', kind: 'diff' },
     tables: computeDiff(prevDec, decode(allNext)),

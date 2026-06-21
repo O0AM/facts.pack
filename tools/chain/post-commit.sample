@@ -1,0 +1,37 @@
+#!/bin/sh
+# FactsPack chain — OPT-IN git post-commit hook (SAMPLE, not auto-installed).
+#
+# What it does: after each commit, regenerate your codebase-map .pack and append
+# it to a master/diff chain. A small change emits a tiny diff; once a diff would
+# exceed ~half a full map (the measured break-even) it re-masters automatically.
+#
+# Install:
+#   cp tools/chain/post-commit.sample .git/hooks/post-commit
+#   chmod +x .git/hooks/post-commit
+#
+# Configure (env, e.g. in the hook or your shell profile):
+#   FACTSPACK_CHAIN_DIR     where the chain lives        (default: .factspack-chain)
+#   FACTSPACK_SNAPSHOT_CMD  a command that writes the CURRENT full snapshot .pack
+#                           to the path given as its first argument. This is YOUR
+#                           producer (e.g. the factstack analyzer, or the browser
+#                           converter's output). The pack's column-1 primary key
+#                           MUST be stable across commits — file paths are; symbol
+#                           ids derived from line numbers are not (see spec §17).
+#
+# Portability: uses POSIX `mktemp` + `sh` — runs on Linux, macOS, and Git-Bash/WSL on
+# Windows. In a non-POSIX Windows shell, swap the `mktemp` line for your own temp path.
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+CHAIN_DIR="${FACTSPACK_CHAIN_DIR:-.factspack-chain}"
+
+if [ -z "${FACTSPACK_SNAPSHOT_CMD:-}" ]; then
+  echo "factspack-chain: set FACTSPACK_SNAPSHOT_CMD to a command that writes a .pack to \$1; skipping." >&2
+  exit 0
+fi
+
+SNAPSHOT="$(mktemp).pack"
+# Run the user's producer with the target path as $1.
+sh -c "$FACTSPACK_SNAPSHOT_CMD \"\$1\"" _ "$SNAPSHOT"
+
+node "$ROOT/tools/chain/cli.mjs" add "$SNAPSHOT" --dir "$CHAIN_DIR"
+rm -f "$SNAPSHOT"

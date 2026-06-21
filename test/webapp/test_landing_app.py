@@ -387,6 +387,60 @@ def run() -> int:
             c.check(f"LF·{path} no console errors", len(errs) == 0, "; ".join(errs[:2]))
             ctx.close()
 
+        # ---- LK. Input formats advertised + detected but not previously exercised ----
+        # NDJSON/JSON-Lines and Markdown tables are advertised (index.html:297) and have their
+        # own detect() branches (index.html:759/763), yet LC only covered JSON, CSV, and code.
+        # Cover them end-to-end: detection label, lossless data.pack, row count, and real seal.
+        c.section("LK. NDJSON + Markdown-table conversion (newly covered)")
+        ctx = browser.new_context(color_scheme="dark")
+        page = ctx.new_page()
+        page.goto(url, wait_until="networkidle")
+
+        def convert_expecting(text, label):
+            # Wait for the detect chip to REACH the expected label (not merely 'not awaiting'),
+            # so a stale label left by a prior conversion can't be mistaken for this one.
+            page.locator("#lab-in").fill("")
+            page.locator("#lab-in").fill(text)
+            page.wait_for_function(
+                "lbl => (document.getElementById('lab-detect').textContent || '').includes(lbl)",
+                arg=label, timeout=4000)
+            prev = page.locator("#lab-pre").inner_text()
+            page.wait_for_selector("#lab-convert:not([disabled])", timeout=4000)
+            page.locator("#lab-convert").click()
+            page.wait_for_function(
+                "prev => { const el = document.getElementById('lab-pre');"
+                " return el && el.textContent.startsWith('# ') && el.textContent !== prev; }",
+                arg=prev, timeout=8000)
+            return page.locator("#lab-pre").inner_text()
+
+        # NDJSON: three one-object-per-line records → a 3-row lossless data.pack.
+        nd_pre = convert_expecting('{"id":1,"role":"admin"}\n{"id":2,"role":"user"}\n{"id":3,"role":"guest"}', "NDJSON")
+        c.check("LK1 NDJSON detected as 'NDJSON / JSON Lines'",
+                "NDJSON" in page.locator("#lab-detect").inner_text(), page.locator("#lab-detect").inner_text())
+        c.check("LK2 NDJSON → lossless data.pack", page.locator("#lab-name").inner_text() == "data.pack",
+                page.locator("#lab-name").inner_text())
+        c.check("LK3 NDJSON trailer counts the 3 records", re.search(r"; end rows=3 ", nd_pre) is not None,
+                nd_pre.splitlines()[-1] if nd_pre else "")
+        c.check("LK4 NDJSON pack carries the admin/user/guest cells",
+                all(v in nd_pre for v in ("admin", "user", "guest")))
+        ok_nd, det_nd = reseal_matches(nd_pre)
+        c.check("LK5 NDJSON pack's SHA-256 trailer recomputes (real seal)", ok_nd, det_nd)
+
+        # Markdown table: header + separator + 2 data rows → a 2-row data.pack. (This is the
+        # case the racy recon mis-read as NDJSON; the label-aware wait confirms the mdtable branch.)
+        md_pre = convert_expecting("| id | role | active |\n|----|------|--------|\n| 1 | admin | yes |\n| 2 | user | no |", "Markdown table")
+        c.check("LK6 Markdown table detected as 'Markdown table' (not shadowed by NDJSON)",
+                "Markdown table" in page.locator("#lab-detect").inner_text(), page.locator("#lab-detect").inner_text())
+        c.check("LK7 Markdown table → data.pack", page.locator("#lab-name").inner_text() == "data.pack",
+                page.locator("#lab-name").inner_text())
+        c.check("LK8 Markdown table yields 2 data rows (header + separator dropped)",
+                re.search(r"; end rows=2 ", md_pre) is not None, md_pre.splitlines()[-1] if md_pre else "")
+        c.check("LK9 Markdown-table pack carries the row cells (admin/user)",
+                "admin" in md_pre and "user" in md_pre)
+        ok_md, det_md = reseal_matches(md_pre)
+        c.check("LK10 Markdown-table pack's SHA-256 trailer recomputes (real seal)", ok_md, det_md)
+        ctx.close()
+
         browser.close()
     return c.summary()
 
